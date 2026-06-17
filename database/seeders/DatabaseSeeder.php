@@ -12,6 +12,9 @@ class DatabaseSeeder extends Seeder
             RolesAndPermissionsSeeder::class,
             SettingsSeeder::class,
             ClientsSeeder::class,
+            ServicesSeeder::class,
+            SalesSeeder::class,
+            LeadsSeeder::class,
         ]);
     }
 }

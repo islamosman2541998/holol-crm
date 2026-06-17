@@ -32,9 +32,17 @@
         @endcan
 
         @can('leads.view')
-            <a href="#" class="sidebar-link">
-                <i class="bi bi-telephone"></i>
+            <a href="{{ route('admin.leads.index') }}"
+                class="sidebar-link {{ request()->routeIs('admin.leads.*') ? 'active' : '' }}">
+                <i class="bi bi-person-lines-fill"></i>
                 <span>العملاء المحتملين</span>
+            </a>
+        @endcan
+        @can('leads.view')
+            <a href="{{ route('admin.lead-followups.index') }}"
+                class="sidebar-link {{ request()->routeIs('admin.lead-followups.*') ? 'active' : '' }}">
+                <i class="bi bi-chat-left-dots"></i>
+                <span>متابعات Leads</span>
             </a>
         @endcan
 
@@ -47,9 +55,17 @@
         @endcan
 
         @can('sales.view')
-            <a href="#" class="sidebar-link">
+            <a href="{{ route('admin.sales.index') }}"
+                class="sidebar-link {{ request()->routeIs('admin.sales.*') ? 'active' : '' }}">
                 <i class="bi bi-cash-coin"></i>
                 <span>المبيعات</span>
+            </a>
+        @endcan
+        @can('services.view')
+            <a href="{{ route('admin.services.index') }}"
+                class="sidebar-link {{ request()->routeIs('admin.services.*') ? 'active' : '' }}">
+                <i class="bi bi-grid"></i>
+                <span>الخدمات</span>
             </a>
         @endcan
 
@@ -66,7 +82,13 @@
                 <span>المهام</span>
             </a>
         @endcan
-
+        @can('payments.view')
+            <a href="{{ route('admin.payments.index') }}"
+                class="sidebar-link {{ request()->routeIs('admin.payments.*') ? 'active' : '' }}">
+                <i class="bi bi-wallet2"></i>
+                <span>المدفوعات</span>
+            </a>
+        @endcan
         @can('users.view')
             <a href="{{ route('admin.users.index') }}"
                 class="sidebar-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">

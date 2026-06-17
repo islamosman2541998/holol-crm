@@ -72,6 +72,11 @@ class RolesAndPermissionsSeeder extends Seeder
             'projects.edit',
             'projects.delete',
 
+            'payments.view',
+            'payments.create',
+            'payments.edit',
+            'payments.delete',
+
             'tasks.view',
             'tasks.create',
             'tasks.edit',

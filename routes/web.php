@@ -8,6 +8,11 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\ClientController;
 use App\Http\Controllers\Admin\FollowupController;
+use App\Http\Controllers\Admin\ServiceController;
+use App\Http\Controllers\Admin\SaleController;
+use App\Http\Controllers\Admin\PaymentController;
+use App\Http\Controllers\Admin\LeadController;
+use App\Http\Controllers\Admin\LeadFollowupController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -58,6 +63,91 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::delete('/clients/{client}', [ClientController::class, 'destroy'])
         ->middleware('permission:clients.delete')
         ->name('clients.destroy');
+    Route::get('/leads', [LeadController::class, 'index'])
+        ->middleware('permission:leads.view')
+        ->name('leads.index');
+
+    Route::get('/leads/create', [LeadController::class, 'create'])
+        ->middleware('permission:leads.create')
+        ->name('leads.create');
+
+    Route::post('/leads', [LeadController::class, 'store'])
+        ->middleware('permission:leads.create')
+        ->name('leads.store');
+
+    Route::post('/leads/{lead}/convert', [LeadController::class, 'convert'])
+        ->middleware('permission:leads.convert')
+        ->name('leads.convert');
+Route::get('/leads/{lead}', [LeadController::class, 'show'])
+    ->middleware('permission:leads.view')
+    ->name('leads.show');
+    Route::get('/leads/{lead}/edit', [LeadController::class, 'edit'])
+        ->middleware('permission:leads.edit')
+        ->name('leads.edit');
+
+    Route::put('/leads/{lead}', [LeadController::class, 'update'])
+        ->middleware('permission:leads.edit')
+        ->name('leads.update');
+
+    Route::delete('/leads/{lead}', [LeadController::class, 'destroy'])
+        ->middleware('permission:leads.delete')
+        ->name('leads.destroy');
+    Route::get('/services', [ServiceController::class, 'index'])
+        ->middleware('permission:services.view')
+        ->name('services.index');
+
+    Route::get('/services/create', [ServiceController::class, 'create'])
+        ->middleware('permission:services.create')
+        ->name('services.create');
+
+    Route::post('/services', [ServiceController::class, 'store'])
+        ->middleware('permission:services.create')
+        ->name('services.store');
+
+    Route::get('/services/{service}/edit', [ServiceController::class, 'edit'])
+        ->middleware('permission:services.edit')
+        ->name('services.edit');
+
+    Route::put('/services/{service}', [ServiceController::class, 'update'])
+        ->middleware('permission:services.edit')
+        ->name('services.update');
+
+    Route::delete('/services/{service}', [ServiceController::class, 'destroy'])
+        ->middleware('permission:services.delete')
+        ->name('services.destroy');
+        Route::get('/lead-followups', [LeadFollowupController::class, 'index'])
+    ->middleware('permission:leads.view')
+    ->name('lead-followups.index');
+    Route::get('/sales', [SaleController::class, 'index'])
+        ->middleware('permission:sales.view')
+        ->name('sales.index');
+
+    Route::get('/sales/create', [SaleController::class, 'create'])
+        ->middleware('permission:sales.create')
+        ->name('sales.create');
+
+    Route::post('/sales', [SaleController::class, 'store'])
+        ->middleware('permission:sales.create')
+        ->name('sales.store');
+
+    Route::get('/sales/{sale}', [SaleController::class, 'show'])
+        ->middleware('permission:sales.view')
+        ->name('sales.show');
+
+    Route::get('/sales/{sale}/edit', [SaleController::class, 'edit'])
+        ->middleware('permission:sales.edit')
+        ->name('sales.edit');
+
+    Route::put('/sales/{sale}', [SaleController::class, 'update'])
+        ->middleware('permission:sales.edit')
+        ->name('sales.update');
+
+    Route::delete('/sales/{sale}', [SaleController::class, 'destroy'])
+        ->middleware('permission:sales.delete')
+        ->name('sales.destroy');
+    Route::get('/payments', [PaymentController::class, 'index'])
+        ->middleware('permission:payments.view')
+        ->name('payments.index');
     Route::resource('users', UserController::class)
         ->except(['show'])
         ->middleware([
