@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Traits\HasActivityLogs;
 
 class Lead extends Model
 {
-    use HasFactory, SoftDeletes;
+  use HasFactory, SoftDeletes, HasActivityLogs;
 
     protected $fillable = [
         'assigned_to',
@@ -58,7 +59,19 @@ public function followups()
 {
     return $this->hasMany(LeadFollowup::class);
 }
-    public function getStatusBadgeClassAttribute(): string
+public function tasks()
+{
+    return $this->hasMany(Task::class);
+}
+public function latestFollowup()
+{
+    return $this->hasOne(LeadFollowup::class)->latestOfMany();
+}
+public function assignedMember()
+{
+    return $this->hasOne(Member::class, 'user_id', 'assigned_to');
+}
+public function getStatusBadgeClassAttribute(): string
     {
         return match ($this->status) {
             'new' => 'bg-info',

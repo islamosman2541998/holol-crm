@@ -15,6 +15,11 @@ class DatabaseSeeder extends Seeder
             ServicesSeeder::class,
             SalesSeeder::class,
             LeadsSeeder::class,
+            TeamsSeeder::class,
+            MembersSeeder::class,
+            ProjectsSeeder::class,
+
+            TasksSeeder::class,
         ]);
     }
 }

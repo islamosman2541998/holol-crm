@@ -25,7 +25,6 @@
                         <option value="contacted">تم التواصل</option>
                         <option value="qualified">مؤهل</option>
                         <option value="unqualified">غير مؤهل</option>
-                        <option value="converted">تم تحويله</option>
                         <option value="lost">مفقود</option>
                     </select>
                 </div>
@@ -34,8 +33,13 @@
                     <label class="form-label">الموظف المسؤول</label>
                     <select class="form-select" wire:model.live="assignedTo">
                         <option value="">كل الموظفين</option>
-                        @foreach ($users as $user)
-                            <option value="{{ $user->id }}">{{ $user->name }}</option>
+                        @foreach ($members as $member)
+                            <option value="{{ $member->user_id }}">
+                                {{ $member->name }}
+                                @if ($member->team)
+                                    - {{ $member->team->name }}
+                                @endif
+                            </option>
                         @endforeach
                     </select>
                 </div>
@@ -72,6 +76,8 @@
                             <th>المصدر</th>
                             <th>الموظف المسؤول</th>
                             <th>الحالة</th>
+                            <th>تاريخ آخر متابعة</th>
+                            <th>محتوى آخر متابعة</th>
                             <th>تاريخ الإضافة</th>
                             <th class="text-end">الإجراءات</th>
                         </tr>
@@ -94,8 +100,16 @@
 
                                 <td>{{ $lead->source ?? '-' }}</td>
 
-                                <td>{{ $lead->assignedUser?->name ?? '-' }}</td>
-
+                                <td>
+                                    @if ($lead->assignedMember)
+                                        <div>{{ $lead->assignedMember->name }}</div>
+                                        <div class="small text-muted">
+                                            {{ $lead->assignedMember->team?->name ?? '-' }}
+                                        </div>
+                                    @else
+                                        {{ $lead->assignedUser?->name ?? '-' }}
+                                    @endif
+                                </td>
                                 <td>
                                     <span class="badge {{ $lead->status_badge_class }}">
                                         {{ $lead->status_label }}
@@ -110,6 +124,37 @@
                                     @endif
                                 </td>
 
+                                <td>
+                                    @if ($lead->latestFollowup)
+                                        {{ $lead->latestFollowup->created_at->format('Y-m-d H:i') }}
+                                    @else
+                                        -
+                                    @endif
+                                </td>
+
+                                <td style="min-width: 260px;">
+                                    @if ($lead->latestFollowup)
+                                        <div class="fw-semibold small">
+                                            {{ str($lead->latestFollowup->note)->limit(90) }}
+                                        </div>
+
+                                        <div class="text-muted small mt-1">
+                                            النوع: {{ $lead->latestFollowup->type_label }}
+                                            -
+                                            بواسطة: {{ $lead->latestFollowup->user?->name ?? '-' }}
+                                        </div>
+
+                                        @if ($lead->latestFollowup->next_followup_at)
+                                            <div class="text-muted small">
+                                                المتابعة القادمة:
+                                                {{ $lead->latestFollowup->next_followup_at->format('Y-m-d H:i') }}
+                                            </div>
+                                        @endif
+                                    @else
+                                        -
+                                    @endif
+                                </td>
+
                                 <td>{{ $lead->created_at->format('Y-m-d') }}</td>
 
                                 <td class="text-end">
@@ -117,18 +162,7 @@
                                         class="btn btn-sm btn-outline-dark">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    @can('leads.convert')
-                                        @if ($lead->status !== 'converted')
-                                            <form action="{{ route('admin.leads.convert', $lead) }}" method="POST"
-                                                class="d-inline">
-                                                @csrf
 
-                                                <button type="submit" class="btn btn-sm btn-outline-success">
-                                                    <i class="bi bi-arrow-repeat"></i>
-                                                </button>
-                                            </form>
-                                        @endif
-                                    @endcan
 
                                     @can('leads.edit')
                                         <a href="{{ route('admin.leads.edit', $lead) }}"
@@ -152,7 +186,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="text-center text-muted py-4">
+                                <td colspan="9" class="text-center text-muted py-4">
                                     لا يوجد عملاء محتملين
                                 </td>
                             </tr>

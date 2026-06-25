@@ -30,7 +30,16 @@ class RolesAndPermissionsSeeder extends Seeder
 
             'permissions.view',
             'permissions.assign',
+            'teams.view',
+            'teams.create',
+            'teams.edit',
+            'teams.delete',
+            'teams.permissions',
 
+            'members.view',
+            'members.create',
+            'members.edit',
+            'members.delete',
             'settings.view',
             'settings.edit',
             'settings.design',
@@ -76,13 +85,21 @@ class RolesAndPermissionsSeeder extends Seeder
             'payments.create',
             'payments.edit',
             'payments.delete',
-
+            'projects.view',
+            'projects.view_all',
+            'projects.create',
+            'projects.edit',
+            'projects.delete',
+            'projects.change_status',
             'tasks.view',
             'tasks.create',
             'tasks.edit',
             'tasks.delete',
+            'tasks.view_all',
+            'tasks.change_status',
 
             'reports.view',
+
         ];
 
         foreach ($permissions as $permission) {

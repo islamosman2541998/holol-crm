@@ -19,14 +19,14 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-    'name',
-    'email',
-    'phone',
-    'image',
-    'password',
-    'status',
-    'last_login_at',
-];
+        'name',
+        'email',
+        'phone',
+        'image',
+        'password',
+        'status',
+        'last_login_at',
+    ];
 
     /**
      * The attributes that should be hidden for serialization.
@@ -44,12 +44,20 @@ class User extends Authenticatable
      * @return array<string, string>
      */
     protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'last_login_at' => 'datetime',
+            'password' => 'hashed',
+            'status' => 'boolean',
+        ];
+    }
+    public function member()
+    {
+        return $this->hasOne(Member::class);
+    }
+    public function createdTasks()
 {
-    return [
-        'email_verified_at' => 'datetime',
-        'last_login_at' => 'datetime',
-        'password' => 'hashed',
-        'status' => 'boolean',
-    ];
+    return $this->hasMany(Task::class, 'created_by');
 }
 }

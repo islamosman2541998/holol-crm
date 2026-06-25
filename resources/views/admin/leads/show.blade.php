@@ -159,5 +159,14 @@
             </div>
         </div>
     </div>
-
+    <div class="row g-4 mt-1">
+        <div class="col-12">
+            <livewire:admin.shared.related-tasks type="lead" :id="$lead->id" />
+        </div>
+    </div>
+    <div class="row g-4 mt-1">
+        <div class="col-12">
+            <livewire:admin.shared.activity-timeline :subject-type="get_class($lead)" :subject-id="$lead->id" />
+        </div>
+    </div>
 @endsection

@@ -217,7 +217,108 @@
             </div>
         </div>
     </div>
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm small-stat-card">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">مهام اليوم</div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">{{ $todayTasksCount ?? 0 }}</h4>
+                        <i class="bi bi-calendar-check fs-3 text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
 
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm small-stat-card">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">مهام متأخرة</div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">{{ $overdueTasksCount ?? 0 }}</h4>
+                        <i class="bi bi-exclamation-triangle fs-3 text-danger"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm small-stat-card">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">قيد التنفيذ</div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">{{ $inProgressTasksCount ?? 0 }}</h4>
+                        <i class="bi bi-hourglass-split fs-3 text-info"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm small-stat-card">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">في المراجعة</div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">{{ $reviewTasksCount ?? 0 }}</h4>
+                        <i class="bi bi-search fs-3 text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm small-stat-card">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">مشاريع نشطة</div>
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">{{ $activeProjectsCount ?? 0 }}</h4>
+                        <i class="bi bi-kanban fs-3 text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm small-stat-card">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">قيد التنفيذ</div>
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">{{ $inProgressProjectsCount ?? 0 }}</h4>
+                        <i class="bi bi-hourglass-split fs-3 text-info"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm small-stat-card">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">مشاريع متأخرة</div>
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">{{ $overdueProjectsCount ?? 0 }}</h4>
+                        <i class="bi bi-exclamation-triangle fs-3 text-danger"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm small-stat-card">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">مشاريع مكتملة</div>
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">{{ $completedProjectsCount ?? 0 }}</h4>
+                        <i class="bi bi-check2-circle fs-3 text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="row g-4">
         <div class="col-lg-4">
             <div class="card border-0 shadow-sm h-100">
@@ -352,7 +453,7 @@
         <div class="col-lg-4">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">آخر العملاء المحتملين</h5>
+                    <h5 class="mb-0">آخر الleads </h5>
 
                     @can('leads.view')
                         <a href="{{ route('admin.leads.index') }}" class="btn btn-sm btn-light">
@@ -393,7 +494,7 @@
                 </div>
             </div>
         </div>
-          <div class="col-lg-4">
+        <div class="col-lg-4">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">آخر متابعات Leads</h5>
@@ -443,6 +544,174 @@
                 </div>
             </div>
         </div>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">آخر المهام</h5>
+
+                    @can('tasks.view')
+                        <a href="{{ route('admin.tasks.index') }}" class="btn btn-sm btn-light">
+                            عرض الكل
+                        </a>
+                    @endcan
+                </div>
+
+                <div class="card-body">
+                    @forelse ($latestTasks ?? [] as $task)
+                        <div class="dashboard-list-item">
+                            <div>
+                                <div class="fw-semibold">
+                                    <a href="{{ route('admin.tasks.show', $task) }}" class="text-decoration-none">
+                                        {{ $task->title }}
+                                    </a>
+                                </div>
+
+                                <div class="small text-muted">
+                                    المسؤول:
+                                    {{ $task->assignedMember?->name ?? '-' }}
+
+                                    @if ($task->assignedMember?->team)
+                                        - {{ $task->assignedMember->team->name }}
+                                    @endif
+                                </div>
+
+                                <div class="small text-muted">
+                                    @if ($task->client)
+                                        عميل: {{ $task->client->name }}
+                                    @elseif ($task->lead)
+                                        Lead: {{ $task->lead->name }}
+                                    @else
+                                        بدون ربط
+                                    @endif
+                                </div>
+                            </div>
+
+                            <div class="text-end">
+                                <div class="mb-1">
+                                    <span class="badge {{ $task->status_badge_class }}">
+                                        {{ $task->status_label }}
+                                    </span>
+                                </div>
+
+                                <div class="small text-muted">
+                                    التسليم:
+                                    {{ $task->due_at?->format('Y-m-d H:i') ?? '-' }}
+                                </div>
+
+                                @if ($task->is_overdue)
+                                    <div class="small text-danger">
+                                        متأخرة
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    @empty
+                        <div class="text-center text-muted py-4">
+                            لا توجد مهام حتى الآن
+                        </div>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+
     </div>
-    
+
+    <div class="row g-4 mb-4 mt-3">
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">آخر المشاريع</h5>
+
+                    @can('projects.view')
+                        <a href="{{ route('admin.projects.index') }}" class="btn btn-sm btn-light">
+                            عرض الكل
+                        </a>
+                    @endcan
+                </div>
+
+                <div class="card-body">
+                    @forelse ($latestProjects ?? [] as $project)
+                        <div class="dashboard-list-item">
+                            <div>
+                                <div class="fw-semibold">
+                                    <a href="{{ route('admin.projects.show', $project) }}" class="text-decoration-none">
+                                        {{ $project->name }}
+                                    </a>
+                                </div>
+
+                                <div class="small text-muted">
+                                    العميل:
+                                    @if ($project->client)
+                                        {{ $project->client->name }}
+                                    @else
+                                        -
+                                    @endif
+                                </div>
+
+                                <div class="small text-muted">
+                                    الفريق:
+                                    {{ $project->team?->name ?? '-' }}
+
+                                    @if ($project->manager)
+                                        |
+                                        المدير: {{ $project->manager->name }}
+                                    @endif
+                                </div>
+
+                                <div class="small text-muted">
+                                    المهام:
+                                    الكل {{ $project->tasks_count }}
+                                    /
+                                    المفتوحة {{ $project->open_tasks_count }}
+                                </div>
+                                <div class="mt-2" style="max-width: 240px;">
+                                    <div class="d-flex justify-content-between small mb-1">
+                                        <span>الإنجاز</span>
+                                        <span>{{ $project->progress_percentage }}%</span>
+                                    </div>
+
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar" role="progressbar"
+                                            style="width: {{ $project->progress_percentage }}%;"
+                                            aria-valuenow="{{ $project->progress_percentage }}" aria-valuemin="0"
+                                            aria-valuemax="100">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="text-end">
+                                <div class="mb-1">
+                                    <span class="badge {{ $project->status_badge_class }}">
+                                        {{ $project->status_label }}
+                                    </span>
+                                </div>
+
+                                <div class="mb-1">
+                                    <span class="badge {{ $project->priority_badge_class }}">
+                                        {{ $project->priority_label }}
+                                    </span>
+                                </div>
+
+                                <div class="small text-muted">
+                                    التسليم:
+                                    {{ $project->due_date?->format('Y-m-d') ?? '-' }}
+                                </div>
+
+                                @if ($project->is_overdue)
+                                    <div class="small text-danger">
+                                        متأخر
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    @empty
+                        <div class="text-center text-muted py-4">
+                            لا توجد مشاريع حتى الآن
+                        </div>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection

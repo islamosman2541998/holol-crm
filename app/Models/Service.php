@@ -25,7 +25,10 @@ class Service extends Model
             'status' => 'boolean',
         ];
     }
-
+    public function projects()
+    {
+        return $this->hasMany(Project::class);
+    }
     public function getStatusLabelAttribute(): string
     {
         return $this->status ? 'نشط' : 'غير نشط';
@@ -36,7 +39,7 @@ class Service extends Model
         return $this->status ? 'bg-success' : 'bg-secondary';
     }
     public function saleItems()
-{
-    return $this->hasMany(SaleItem::class);
-}
+    {
+        return $this->hasMany(SaleItem::class);
+    }
 }

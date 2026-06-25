@@ -13,6 +13,11 @@ use App\Http\Controllers\Admin\SaleController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\LeadController;
 use App\Http\Controllers\Admin\LeadFollowupController;
+use App\Http\Controllers\Admin\TeamController;
+use App\Http\Controllers\Admin\MemberController;
+use App\Http\Controllers\Admin\TaskController;
+use App\Http\Controllers\Admin\ProjectController;
+
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -38,6 +43,127 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::get('/followups', [FollowupController::class, 'index'])
         ->middleware('permission:followups.view')
         ->name('followups.index');
+    Route::get('/teams', [TeamController::class, 'index'])
+        ->middleware('permission:teams.view')
+        ->name('teams.index');
+
+    Route::get('/teams/create', [TeamController::class, 'create'])
+        ->middleware('permission:teams.create')
+        ->name('teams.create');
+
+    Route::post('/teams', [TeamController::class, 'store'])
+        ->middleware('permission:teams.create')
+        ->name('teams.store');
+
+    Route::get('/teams/{team}', [TeamController::class, 'show'])
+        ->middleware('permission:teams.view')
+        ->name('teams.show');
+
+    Route::get('/teams/{team}/edit', [TeamController::class, 'edit'])
+        ->middleware('permission:teams.edit')
+        ->name('teams.edit');
+
+    Route::put('/teams/{team}', [TeamController::class, 'update'])
+        ->middleware('permission:teams.edit')
+        ->name('teams.update');
+
+    Route::delete('/teams/{team}', [TeamController::class, 'destroy'])
+        ->middleware('permission:teams.delete')
+        ->name('teams.destroy');
+    Route::get('/members', [MemberController::class, 'index'])
+        ->middleware('permission:members.view')
+        ->name('members.index');
+
+    Route::get('/members/create', [MemberController::class, 'create'])
+        ->middleware('permission:members.create')
+        ->name('members.create');
+
+    Route::post('/members', [MemberController::class, 'store'])
+        ->middleware('permission:members.create')
+        ->name('members.store');
+
+    Route::get('/members/{member}', [MemberController::class, 'show'])
+        ->middleware('permission:members.view')
+        ->name('members.show');
+
+    Route::get('/members/{member}/edit', [MemberController::class, 'edit'])
+        ->middleware('permission:members.edit')
+        ->name('members.edit');
+
+    Route::put('/members/{member}', [MemberController::class, 'update'])
+        ->middleware('permission:members.edit')
+        ->name('members.update');
+
+    Route::delete('/members/{member}', [MemberController::class, 'destroy'])
+        ->middleware('permission:members.delete')
+        ->name('members.destroy');
+
+    Route::get('/projects', [ProjectController::class, 'index'])
+        ->middleware('permission:projects.view')
+        ->name('projects.index');
+
+    Route::get('/projects/create', [ProjectController::class, 'create'])
+        ->middleware('permission:projects.create')
+        ->name('projects.create');
+
+    Route::post('/projects', [ProjectController::class, 'store'])
+        ->middleware('permission:projects.create')
+        ->name('projects.store');
+
+    Route::get('/projects/{project}', [ProjectController::class, 'show'])
+        ->middleware('permission:projects.view')
+        ->name('projects.show');
+
+    Route::get('/projects/{project}/edit', [ProjectController::class, 'edit'])
+        ->middleware('permission:projects.edit')
+        ->name('projects.edit');
+
+    Route::put('/projects/{project}', [ProjectController::class, 'update'])
+        ->middleware('permission:projects.edit')
+        ->name('projects.update');
+
+    Route::patch('/projects/{project}/status', [ProjectController::class, 'changeStatus'])
+        ->middleware('permission:projects.change_status')
+        ->name('projects.change-status');
+
+    Route::delete('/projects/{project}', [ProjectController::class, 'destroy'])
+        ->middleware('permission:projects.delete')
+        ->name('projects.destroy');
+    Route::post('/teams/{team}/sync-members', [TeamController::class, 'syncMembers'])
+        ->middleware('permission:teams.permissions')
+        ->name('teams.sync-members');
+
+    Route::get('/tasks', [TaskController::class, 'index'])
+        ->middleware('permission:tasks.view')
+        ->name('tasks.index');
+
+    Route::get('/tasks/create', [TaskController::class, 'create'])
+        ->middleware('permission:tasks.create')
+        ->name('tasks.create');
+
+    Route::post('/tasks', [TaskController::class, 'store'])
+        ->middleware('permission:tasks.create')
+        ->name('tasks.store');
+
+    Route::get('/tasks/{task}', [TaskController::class, 'show'])
+        ->middleware('permission:tasks.view')
+        ->name('tasks.show');
+
+    Route::get('/tasks/{task}/edit', [TaskController::class, 'edit'])
+        ->middleware('permission:tasks.edit')
+        ->name('tasks.edit');
+
+    Route::put('/tasks/{task}', [TaskController::class, 'update'])
+        ->middleware('permission:tasks.edit')
+        ->name('tasks.update');
+
+    Route::patch('/tasks/{task}/status', [TaskController::class, 'changeStatus'])
+        ->middleware('permission:tasks.change_status')
+        ->name('tasks.change-status');
+
+    Route::delete('/tasks/{task}', [TaskController::class, 'destroy'])
+        ->middleware('permission:tasks.delete')
+        ->name('tasks.destroy');
     Route::get('/clients', [ClientController::class, 'index'])
         ->middleware('permission:clients.view')
         ->name('clients.index');
@@ -78,9 +204,9 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::post('/leads/{lead}/convert', [LeadController::class, 'convert'])
         ->middleware('permission:leads.convert')
         ->name('leads.convert');
-Route::get('/leads/{lead}', [LeadController::class, 'show'])
-    ->middleware('permission:leads.view')
-    ->name('leads.show');
+    Route::get('/leads/{lead}', [LeadController::class, 'show'])
+        ->middleware('permission:leads.view')
+        ->name('leads.show');
     Route::get('/leads/{lead}/edit', [LeadController::class, 'edit'])
         ->middleware('permission:leads.edit')
         ->name('leads.edit');
@@ -115,9 +241,9 @@ Route::get('/leads/{lead}', [LeadController::class, 'show'])
     Route::delete('/services/{service}', [ServiceController::class, 'destroy'])
         ->middleware('permission:services.delete')
         ->name('services.destroy');
-        Route::get('/lead-followups', [LeadFollowupController::class, 'index'])
-    ->middleware('permission:leads.view')
-    ->name('lead-followups.index');
+    Route::get('/lead-followups', [LeadFollowupController::class, 'index'])
+        ->middleware('permission:leads.view')
+        ->name('lead-followups.index');
     Route::get('/sales', [SaleController::class, 'index'])
         ->middleware('permission:sales.view')
         ->name('sales.index');

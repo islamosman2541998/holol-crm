@@ -4,6 +4,11 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Pagination\Paginator;
+use App\Models\Client;
+use App\Models\Lead;
+use App\Observers\ClientObserver;
+use App\Observers\LeadObserver;
+
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -20,5 +25,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Paginator::useBootstrapFive();
+        Lead::observe(LeadObserver::class);
+        Client::observe(ClientObserver::class);
     }
 }

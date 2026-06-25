@@ -15,9 +15,9 @@
 
         <div class="card-body">
             @include('admin.clients.partials.form', [
-                'client' => null,
-                'users' => $users,
-            ])
+    'client' => null,
+    'members' => $members,
+])
         </div>
 
         <div class="card-footer bg-white d-flex justify-content-end gap-2">

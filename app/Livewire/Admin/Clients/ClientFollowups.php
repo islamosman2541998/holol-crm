@@ -34,13 +34,25 @@ class ClientFollowups extends Component
             'status.required' => 'حالة المتابعة مطلوبة',
         ]);
 
-        ClientFollowup::query()->create([
+        $followup = ClientFollowup::query()->create([
             'client_id' => $this->client->id,
             'user_id' => auth()->id(),
             'note' => $data['note'],
             'next_followup_at' => $data['next_followup_at'],
             'status' => $data['status'],
         ]);
+
+        $this->client->logActivity(
+            event: 'followup_created',
+            title: 'تم إضافة متابعة',
+            description: 'تم إضافة متابعة للعميل.',
+            newValues: [
+                'followup_id' => $followup->id,
+                'note' => $followup->note,
+                'next_followup_at' => $followup->next_followup_at?->toDateTimeString(),
+                'status' => $followup->status,
+            ]
+        );
 
         $this->reset([
             'note',
@@ -49,6 +61,7 @@ class ClientFollowups extends Component
 
         $this->status = 'pending';
 
+        $this->dispatch('activity-log-updated');
         $this->dispatch('toast', type: 'success', message: 'تم إضافة المتابعة بنجاح');
     }
 
@@ -60,10 +73,27 @@ class ClientFollowups extends Component
             ->where('client_id', $this->client->id)
             ->findOrFail($followupId);
 
+        $oldStatus = $followup->status;
+
         $followup->update([
             'status' => 'done',
         ]);
 
+        $this->client->logActivity(
+            event: 'followup_done',
+            title: 'تم إنهاء متابعة',
+            description: 'تم تغيير حالة متابعة العميل إلى تمت.',
+            oldValues: [
+                'followup_id' => $followup->id,
+                'status' => $oldStatus,
+            ],
+            newValues: [
+                'followup_id' => $followup->id,
+                'status' => 'done',
+            ]
+        );
+
+        $this->dispatch('activity-log-updated');
         $this->dispatch('toast', type: 'success', message: 'تم تحديث حالة المتابعة');
     }
 
@@ -75,8 +105,21 @@ class ClientFollowups extends Component
             ->where('client_id', $this->client->id)
             ->findOrFail($followupId);
 
+        $this->client->logActivity(
+            event: 'followup_deleted',
+            title: 'تم حذف متابعة',
+            description: 'تم حذف متابعة من سجل العميل.',
+            oldValues: [
+                'followup_id' => $followup->id,
+                'note' => $followup->note,
+                'next_followup_at' => $followup->next_followup_at?->toDateTimeString(),
+                'status' => $followup->status,
+            ]
+        );
+
         $followup->delete();
 
+        $this->dispatch('activity-log-updated');
         $this->dispatch('toast', type: 'success', message: 'تم حذف المتابعة');
     }
 

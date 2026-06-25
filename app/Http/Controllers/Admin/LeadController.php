@@ -8,6 +8,7 @@ use App\Models\Lead;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\Member;
 
 class LeadController extends Controller
 {
@@ -26,12 +27,11 @@ class LeadController extends Controller
     }
     public function create()
     {
-        $users = User::query()
-            ->where('status', true)
-            ->orderBy('name')
+        $members = Member::query()
+            ->assignable()
             ->get();
 
-        return view('admin.leads.create', compact('users'));
+        return view('admin.leads.create', compact('members'));
     }
 
     public function store(Request $request)
@@ -78,9 +78,11 @@ class LeadController extends Controller
 
     public function convert(Lead $lead)
     {
+        abort_unless(auth()->user()->can('leads.convert'), 403);
+
         abort_if($lead->status === 'converted', 422, 'هذا العميل المحتمل تم تحويله بالفعل');
 
-        DB::transaction(function () use ($lead) {
+        $client = DB::transaction(function () use ($lead) {
             $client = Client::query()->create([
                 'assigned_to' => $lead->assigned_to,
                 'name' => $lead->name,
@@ -99,10 +101,15 @@ class LeadController extends Controller
                 'converted_client_id' => $client->id,
                 'converted_at' => now(),
             ]);
+
+            // نخفي الـ Lead من قائمة العملاء المحتملين
+            $lead->delete();
+
+            return $client;
         });
 
         return redirect()
-            ->route('admin.leads.index')
+            ->route('admin.clients.show', $client)
             ->with('success', 'تم تحويل العميل المحتمل إلى عميل بنجاح');
     }
 
@@ -117,7 +124,7 @@ class LeadController extends Controller
             'phone' => ['nullable', 'string', 'max:50'],
             'city' => ['nullable', 'string', 'max:100'],
             'source' => ['nullable', 'string', 'max:100'],
-            'status' => ['required', 'in:new,contacted,qualified,unqualified,converted,lost'],
+            'status' => ['required', 'in:new,contacted,qualified,unqualified,lost'],
             'notes' => ['nullable', 'string'],
         ], [
             'name.required' => 'اسم العميل المحتمل مطلوب',

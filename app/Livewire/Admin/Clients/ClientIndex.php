@@ -6,6 +6,7 @@ use App\Models\Client;
 use App\Models\User;
 use Livewire\Component;
 use Livewire\WithPagination;
+use App\Models\Member;
 
 class ClientIndex extends Component
 {
@@ -46,8 +47,7 @@ class ClientIndex extends Component
     public function render()
     {
         $clients = Client::query()
-            ->with('assignedUser')
-            ->when($this->search, function ($query) {
+            ->with(['assignedUser', 'assignedMember.team', 'latestFollowup.user'])->when($this->search, function ($query) {
                 $query->where(function ($query) {
                     $query->where('name', 'like', '%' . $this->search . '%')
                         ->orWhere('company', 'like', '%' . $this->search . '%')
@@ -65,14 +65,12 @@ class ClientIndex extends Component
             ->latest()
             ->paginate(10);
 
-        $users = User::query()
-            ->where('status', true)
-            ->orderBy('name')
+        $members = Member::query()
+            ->assignable()
             ->get();
-
         return view('livewire.admin.clients.client-index', [
             'clients' => $clients,
-            'users' => $users,
+            'members' => $members,
         ]);
     }
 }

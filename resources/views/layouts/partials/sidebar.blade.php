@@ -30,12 +30,19 @@
                 <span>العملاء</span>
             </a>
         @endcan
+        @can('followups.view')
+            <a href="{{ route('admin.followups.index') }}"
+                class="sidebar-link {{ request()->routeIs('admin.followups.*') ? 'active' : '' }}">
+                <i class="bi bi-chat-dots"></i>
+                <span>المتابعات</span>
+            </a>
+        @endcan
 
         @can('leads.view')
             <a href="{{ route('admin.leads.index') }}"
                 class="sidebar-link {{ request()->routeIs('admin.leads.*') ? 'active' : '' }}">
                 <i class="bi bi-person-lines-fill"></i>
-                <span>العملاء المحتملين</span>
+                <span>Leads </span>
             </a>
         @endcan
         @can('leads.view')
@@ -46,13 +53,7 @@
             </a>
         @endcan
 
-        @can('followups.view')
-            <a href="{{ route('admin.followups.index') }}"
-                class="sidebar-link {{ request()->routeIs('admin.followups.*') ? 'active' : '' }}">
-                <i class="bi bi-chat-dots"></i>
-                <span>المتابعات</span>
-            </a>
-        @endcan
+
 
         @can('sales.view')
             <a href="{{ route('admin.sales.index') }}"
@@ -68,17 +69,33 @@
                 <span>الخدمات</span>
             </a>
         @endcan
+        @can('teams.view')
+            <a href="{{ route('admin.teams.index') }}"
+                class="sidebar-link {{ request()->routeIs('admin.teams.*') ? 'active' : '' }}">
+                <i class="bi bi-people"></i>
+                <span>الفرق</span>
+            </a>
+        @endcan
+        @can('members.view')
+            <a href="{{ route('admin.members.index') }}"
+                class="sidebar-link {{ request()->routeIs('admin.members.*') ? 'active' : '' }}">
+                <i class="bi bi-person-badge"></i>
+                <span>الأعضاء</span>
+            </a>
+        @endcan
 
         @can('projects.view')
-            <a href="#" class="sidebar-link">
+            <a href="{{ route('admin.projects.index') }}"
+                class="sidebar-link {{ request()->routeIs('admin.projects.*') ? 'active' : '' }}">
                 <i class="bi bi-kanban"></i>
                 <span>المشاريع</span>
             </a>
         @endcan
 
         @can('tasks.view')
-            <a href="#" class="sidebar-link">
-                <i class="bi bi-list-task"></i>
+            <a href="{{ route('admin.tasks.index') }}"
+                class="sidebar-link {{ request()->routeIs('admin.tasks.*') ? 'active' : '' }}">
+                <i class="bi bi-check2-square"></i>
                 <span>المهام</span>
             </a>
         @endcan

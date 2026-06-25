@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\User;
 use Illuminate\Http\Request;
+use App\Models\Member;
 
 class ClientController extends Controller
 {
@@ -13,20 +14,19 @@ class ClientController extends Controller
     {
         return view('admin.clients.index');
     }
-public function show(Client $client)
-{
-    $client->load('assignedUser');
+    public function show(Client $client)
+    {
+        $client->load('assignedUser');
 
-    return view('admin.clients.show', compact('client'));
-}
+        return view('admin.clients.show', compact('client'));
+    }
     public function create()
     {
-        $users = User::query()
-            ->where('status', true)
-            ->orderBy('name')
+        $members = Member::query()
+            ->assignable()
             ->get();
 
-        return view('admin.clients.create', compact('users'));
+        return view('admin.clients.create', compact('members'));
     }
 
     public function store(Request $request)
@@ -40,16 +40,23 @@ public function show(Client $client)
             ->with('success', 'تم إضافة العميل بنجاح');
     }
 
-   public function edit(Client $client)
-{
-    $users = User::query()
-        ->where('status', true)
-        ->orWhere('id', $client->assigned_to)
-        ->orderBy('name')
-        ->get();
+    public function edit(Client $client)
+    {
+        $members = Member::query()
+            ->whereNotNull('user_id')
+            ->with(['user', 'team'])
+            ->where(function ($query) use ($client) {
+                $query->where('status', 'active');
 
-    return view('admin.clients.edit', compact('client', 'users'));
-}
+                if ($client->assigned_to) {
+                    $query->orWhere('user_id', $client->assigned_to);
+                }
+            })
+            ->orderBy('name')
+            ->get();
+
+        return view('admin.clients.edit', compact('client', 'members'));
+    }
 
     public function update(Request $request, Client $client)
     {

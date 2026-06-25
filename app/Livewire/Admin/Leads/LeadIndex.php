@@ -6,6 +6,7 @@ use App\Models\Lead;
 use App\Models\User;
 use Livewire\Component;
 use Livewire\WithPagination;
+use App\Models\Member;
 
 class LeadIndex extends Component
 {
@@ -46,7 +47,8 @@ class LeadIndex extends Component
     public function render()
     {
         $leads = Lead::query()
-            ->with(['assignedUser', 'convertedClient'])
+            ->where('status', '!=', 'converted')
+          ->with(['assignedUser', 'assignedMember.team', 'convertedClient', 'latestFollowup.user'])
             ->when($this->search, function ($query) {
                 $query->where(function ($query) {
                     $query->where('name', 'like', '%' . $this->search . '%')
@@ -66,14 +68,13 @@ class LeadIndex extends Component
             ->latest()
             ->paginate(10);
 
-        $users = User::query()
-            ->where('status', true)
-            ->orderBy('name')
-            ->get();
+      $members = Member::query()
+    ->assignable()
+    ->get();
 
         return view('livewire.admin.leads.lead-index', [
             'leads' => $leads,
-            'users' => $users,
+             'members' => $members,
         ]);
     }
 }

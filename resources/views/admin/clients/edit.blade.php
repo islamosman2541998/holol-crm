@@ -15,10 +15,10 @@
         @method('PUT')
 
         <div class="card-body">
-            @include('admin.clients.partials.form', [
-                'client' => $client,
-                'users' => $users,
-            ])
+           @include('admin.clients.partials.form', [
+    'client' => $client,
+    'members' => $members,
+])
         </div>
 
         <div class="card-footer bg-white d-flex justify-content-end gap-2">

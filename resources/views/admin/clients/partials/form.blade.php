@@ -48,20 +48,24 @@
     <div class="col-md-6">
         <label class="form-label">الموظف المسؤول</label>
         <select name="assigned_to" class="form-select">
-            <option value="">بدون موظف</option>
+            <option value="">بدون موظف مسؤول</option>
 
-            @foreach ($users as $user)
-                <option value="{{ $user->id }}" @selected((string) old('assigned_to', $client?->assigned_to) === (string) $user->id)>
-                    {{ $user->name }}
+            @foreach ($members as $member)
+                <option value="{{ $member->user_id }}" @selected(old('assigned_to', $client?->assigned_to) == $member->user_id)>
+                    {{ $member->name }}
+                    @if ($member->team)
+                        - {{ $member->team->name }}
+                    @endif
+                    @if ($member->job_title)
+                        - {{ $member->job_title }}
+                    @endif
                 </option>
             @endforeach
         </select>
 
-        @if ($users->isEmpty())
-            <div class="text-danger small mt-2">
-                لا يوجد مستخدمين نشطين لاختيارهم كمسؤولين.
-            </div>
-        @endif
+        <div class="form-text">
+            يظهر هنا الأعضاء المرتبطين بحساب دخول فقط.
+        </div>
     </div>
 
     <div class="col-md-6">

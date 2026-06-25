@@ -36,7 +36,7 @@ class LeadFollowups extends Component
             'next_followup_at.date' => 'تاريخ المتابعة غير صحيح',
         ]);
 
-        LeadFollowup::query()->create([
+        $followup = LeadFollowup::query()->create([
             'lead_id' => $this->lead->id,
             'user_id' => auth()->id(),
             'type' => $data['type'],
@@ -44,6 +44,20 @@ class LeadFollowups extends Component
             'next_followup_at' => $data['next_followup_at'],
             'status' => $data['status'],
         ]);
+
+        $this->lead->logActivity(
+            event: 'followup_created',
+            title: 'تم إضافة متابعة',
+            description: 'تم إضافة متابعة للـ Lead من نوع: ' . $followup->type_label . '.',
+            newValues: [
+                'followup_id' => $followup->id,
+                'type' => $followup->type,
+                'type_label' => $followup->type_label,
+                'note' => $followup->note,
+                'next_followup_at' => $followup->next_followup_at?->toDateTimeString(),
+                'status' => $followup->status,
+            ]
+        );
 
         $this->reset([
             'note',
@@ -53,6 +67,7 @@ class LeadFollowups extends Component
         $this->type = 'note';
         $this->status = 'pending';
 
+        $this->dispatch('activity-log-updated');
         $this->dispatch('toast', type: 'success', message: 'تم إضافة المتابعة بنجاح');
     }
 
@@ -64,10 +79,27 @@ class LeadFollowups extends Component
             ->where('lead_id', $this->lead->id)
             ->findOrFail($followupId);
 
+        $oldStatus = $followup->status;
+
         $followup->update([
             'status' => 'done',
         ]);
 
+        $this->lead->logActivity(
+            event: 'followup_done',
+            title: 'تم إنهاء متابعة',
+            description: 'تم تغيير حالة متابعة الـ Lead إلى تمت.',
+            oldValues: [
+                'followup_id' => $followup->id,
+                'status' => $oldStatus,
+            ],
+            newValues: [
+                'followup_id' => $followup->id,
+                'status' => 'done',
+            ]
+        );
+
+        $this->dispatch('activity-log-updated');
         $this->dispatch('toast', type: 'success', message: 'تم تحديث المتابعة');
     }
 
@@ -79,8 +111,23 @@ class LeadFollowups extends Component
             ->where('lead_id', $this->lead->id)
             ->findOrFail($followupId);
 
+        $this->lead->logActivity(
+            event: 'followup_deleted',
+            title: 'تم حذف متابعة',
+            description: 'تم حذف متابعة من سجل الـ Lead.',
+            oldValues: [
+                'followup_id' => $followup->id,
+                'type' => $followup->type,
+                'type_label' => $followup->type_label,
+                'note' => $followup->note,
+                'next_followup_at' => $followup->next_followup_at?->toDateTimeString(),
+                'status' => $followup->status,
+            ]
+        );
+
         $followup->delete();
 
+        $this->dispatch('activity-log-updated');
         $this->dispatch('toast', type: 'success', message: 'تم حذف المتابعة');
     }
 
