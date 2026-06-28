@@ -47,13 +47,20 @@ class LeadController extends Controller
 
     public function edit(Lead $lead)
     {
-        $users = User::query()
-            ->where('status', true)
-            ->orWhere('id', $lead->assigned_to)
+        $members = Member::query()
+            ->with(['user', 'team'])
+            ->where(function ($query) use ($lead) {
+                $query->whereNotNull('user_id')
+                    ->where('status', 'active');
+
+                if ($lead->assigned_to) {
+                    $query->orWhere('user_id', $lead->assigned_to);
+                }
+            })
             ->orderBy('name')
             ->get();
 
-        return view('admin.leads.edit', compact('lead', 'users'));
+        return view('admin.leads.edit', compact('lead', 'members'));
     }
 
     public function update(Request $request, Lead $lead)
