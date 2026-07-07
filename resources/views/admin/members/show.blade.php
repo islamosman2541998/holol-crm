@@ -20,7 +20,9 @@
                     {{ $member->name }}
 
                     @if ($member->is_manager)
-                        <span class="badge bg-primary">مدير</span>
+                        <span class="badge bg-primary">له دور إداري</span>
+                    @else
+                        <span class="badge bg-secondary">عضو منفذ</span>
                     @endif
                 </h4>
 
@@ -54,26 +56,97 @@
 
                 <div class="card-body">
                     <div class="client-info-item">
-                        <span>الفريق</span>
+                        <span>الفريق / القسم التابع له العضو</span>
                         <strong>
                             @if ($member->team)
                                 <a href="{{ route('admin.teams.show', $member->team) }}">
                                     {{ $member->team->name }}
                                 </a>
+
+                                <div class="small text-muted mt-1">
+                                    هذا هو الفريق أو القسم الذي ينتمي له العضو داخل الشركة.
+                                </div>
                             @else
                                 -
+                                <div class="small text-muted mt-1">
+                                    لم يتم تحديد فريق لهذا العضو.
+                                </div>
                             @endif
                         </strong>
                     </div>
 
                     <div class="client-info-item">
-                        <span>المدير المباشر</span>
-                        <strong>{{ $member->directManager?->name ?? '-' }}</strong>
+                        <span>مدير الفريق / قائد القسم</span>
+                        <strong>
+                            @if ($member->team?->manager)
+                                <a href="{{ route('admin.members.show', $member->team->manager) }}">
+                                    {{ $member->team->manager->name }}
+                                </a>
+
+                                @if ($member->team->manager->id === $member->id)
+                                    <span class="badge bg-primary ms-1">هو نفسه قائد الفريق</span>
+                                @endif
+
+                                <div class="small text-muted mt-1">
+                                    هذا الشخص مسؤول عن الفريق بالكامل، ويتم تحديده من صفحة الفريق.
+                                </div>
+                            @else
+                                لا يوجد مدير فريق محدد
+                                <div class="small text-muted mt-1">
+                                    يمكن تحديد قائد الفريق من صفحة تعديل الفريق.
+                                </div>
+                            @endif
+                        </strong>
                     </div>
 
                     <div class="client-info-item">
-                        <span>القسم</span>
-                        <strong>{{ $member->department ?? '-' }}</strong>
+                        <span>المدير المباشر للعضو</span>
+                        <strong>
+                            @if ($member->directManager)
+                                <a href="{{ route('admin.members.show', $member->directManager) }}">
+                                    {{ $member->directManager->name }}
+                                </a>
+
+                                <div class="small text-muted mt-1">
+                                    هذا هو الشخص المسؤول عن متابعة العضو مباشرة بشكل يومي.
+                                </div>
+                            @else
+                                لا يوجد مدير مباشر
+                                <div class="small text-muted mt-1">
+                                    غالبًا هذا العضو قائد فريق أو غير تابع لمدير مباشر.
+                                </div>
+                            @endif
+                        </strong>
+                    </div>
+
+                    <div class="client-info-item">
+                        <span>دور العضو داخل الفريق</span>
+                        <strong>
+                            @if ($member->is_manager)
+                                <span class="badge bg-success">له دور إداري</span>
+
+                                <div class="small text-muted mt-1">
+                                    يمكن استخدام هذا العضو كمدير مباشر أو قائد فريق حسب الإعدادات.
+                                </div>
+                            @else
+                                <span class="badge bg-secondary">عضو منفذ</span>
+
+                                <div class="small text-muted mt-1">
+                                    عضو يعمل داخل الفريق ولا يتم اعتباره مديرًا.
+                                </div>
+                            @endif
+                        </strong>
+                    </div>
+
+                    <div class="client-info-item">
+                        <span>القسم النصي داخل بيانات العضو</span>
+                        <strong>
+                            {{ $member->department ?? '-' }}
+
+                            <div class="small text-muted mt-1">
+                                هذا وصف نصي فقط، أما الربط الأساسي يكون من حقل الفريق.
+                            </div>
+                        </strong>
                     </div>
 
                     <div class="client-info-item">
@@ -115,17 +188,17 @@
                 <div class="card-body">
                     @if ($member->user)
                         <div class="client-info-item">
-                            <span>الاسم</span>
+                            <span>اسم حساب الدخول</span>
                             <strong>{{ $member->user->name }}</strong>
                         </div>
 
                         <div class="client-info-item">
-                            <span>الإيميل</span>
+                            <span>إيميل تسجيل الدخول</span>
                             <strong>{{ $member->user->email }}</strong>
                         </div>
 
                         <div class="client-info-item">
-                            <span>الحالة</span>
+                            <span>حالة الحساب</span>
                             <strong>
                                 @if ($member->user->status)
                                     <span class="badge bg-success">نشط</span>
@@ -136,14 +209,18 @@
                         </div>
 
                         <div class="client-info-item">
-                            <span>Roles</span>
+                            <span>الأدوار / Roles</span>
                             <strong>
                                 {{ $member->user->roles->pluck('name')->join(', ') ?: '-' }}
+
+                                <div class="small text-muted mt-1">
+                                    تشمل أدوار المستخدم المباشرة وصلاحيات الفريق المرتبط به.
+                                </div>
                             </strong>
                         </div>
                     @else
                         <div class="text-muted">
-                            هذا العضو غير مرتبط بحساب دخول.
+                            هذا العضو غير مرتبط بحساب دخول، لذلك لن يستطيع تسجيل الدخول أو الحصول على صلاحيات.
                         </div>
                     @endif
                 </div>
@@ -165,8 +242,13 @@
         <div class="col-lg-8">
             @if ($member->is_manager)
                 <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-header bg-white">
-                        <h5 class="mb-0">الأعضاء تحت إدارته</h5>
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-0">الأعضاء تحت إدارته المباشرة</h5>
+                            <div class="small text-muted mt-1">
+                                هؤلاء الأعضاء تم تحديد هذا العضو كمدير مباشر لهم من صفحة العضو.
+                            </div>
+                        </div>
                     </div>
 
                     <div class="card-body">
@@ -185,17 +267,26 @@
                                 <tbody>
                                     @forelse ($member->managedMembers as $managedMember)
                                         <tr>
-                                            <td>{{ $managedMember->name }}</td>
+                                            <td>
+                                                <strong>{{ $managedMember->name }}</strong>
+
+                                                <div class="small text-muted">
+                                                    تابع مباشر لهذا العضو
+                                                </div>
+                                            </td>
+
                                             <td>{{ $managedMember->team?->name ?? '-' }}</td>
                                             <td>{{ $managedMember->job_title ?? '-' }}</td>
+
                                             <td>
                                                 <span class="badge {{ $managedMember->status_badge_class }}">
                                                     {{ $managedMember->status_label }}
                                                 </span>
                                             </td>
+
                                             <td class="text-end">
                                                 <a href="{{ route('admin.members.show', $managedMember) }}"
-                                                    class="btn btn-sm btn-outline-dark">
+                                                   class="btn btn-sm btn-outline-dark">
                                                     <i class="bi bi-eye"></i>
                                                 </a>
                                             </td>
@@ -203,7 +294,65 @@
                                     @empty
                                         <tr>
                                             <td colspan="5" class="text-center text-muted py-4">
-                                                لا يوجد أعضاء تحت إدارة هذا العضو
+                                                لا يوجد أعضاء تحت الإدارة المباشرة لهذا العضو
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">الفرق التي يقودها كمدير فريق</h5>
+                        <div class="small text-muted mt-1">
+                            هذه الفرق تم تحديد هذا العضو كقائد لها من صفحة الفريق.
+                        </div>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>الفريق</th>
+                                        <th>الكود</th>
+                                        <th>الحالة</th>
+                                        <th class="text-end">عرض</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    @forelse ($member->managedTeams as $managedTeam)
+                                        <tr>
+                                            <td>
+                                                <strong>{{ $managedTeam->name }}</strong>
+                                                <div class="small text-muted">
+                                                    هذا العضو هو قائد هذا الفريق بالكامل
+                                                </div>
+                                            </td>
+
+                                            <td>{{ $managedTeam->code }}</td>
+
+                                            <td>
+                                                <span class="badge {{ $managedTeam->status_badge_class }}">
+                                                    {{ $managedTeam->status_label }}
+                                                </span>
+                                            </td>
+
+                                            <td class="text-end">
+                                                <a href="{{ route('admin.teams.show', $managedTeam) }}"
+                                                   class="btn btn-sm btn-outline-dark">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted py-4">
+                                                هذا العضو ليس قائدًا لأي فريق حاليًا
                                             </td>
                                         </tr>
                                     @endforelse
@@ -213,8 +362,11 @@
                     </div>
                 </div>
             @endif
+
             <livewire:admin.shared.related-projects type="member" :id="$member->id" />
+
             <livewire:admin.shared.related-tasks type="member" :id="$member->id" />
+
             <livewire:admin.shared.activity-timeline :subject-type="get_class($member)" :subject-id="$member->id" />
         </div>
     </div>
