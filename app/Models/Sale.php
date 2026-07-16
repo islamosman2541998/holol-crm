@@ -14,6 +14,7 @@ class Sale extends Model
         'client_id',
         'user_id',
         'subtotal',
+        'quotation_id',
         'vat',
         'total',
         'payment_method',
@@ -41,7 +42,32 @@ class Sale extends Model
     {
         return $this->belongsTo(User::class);
     }
+public function quotation()
+{
+    return $this->belongsTo(Quotation::class);
+}
 
+public function refreshPaymentStatus(): void
+{
+    $paidAmount = (float) $this->payments()->sum('amount');
+    $total = (float) $this->total;
+
+    $newStatus = 'pending';
+
+    if ($paidAmount >= $total && $total > 0) {
+        $newStatus = 'paid';
+    } elseif ($paidAmount > 0) {
+        $newStatus = 'partial';
+    }
+
+    $this->update([
+        'status' => $newStatus,
+    ]);
+
+    if ($newStatus === 'paid' && $this->quotation && $this->quotation->status !== 'closed') {
+        $this->quotation->markAsClosed();
+    }
+}
     public function items()
     {
         return $this->hasMany(SaleItem::class);

@@ -16,7 +16,11 @@ class ClientController extends Controller
     }
     public function show(Client $client)
     {
-        $client->load('assignedUser');
+        $client->load([
+            'assignedUser',
+            'openQuotations.items.service',
+            'openQuotations.sale.payments',
+        ]);
 
         return view('admin.clients.show', compact('client'));
     }

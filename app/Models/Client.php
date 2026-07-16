@@ -10,7 +10,7 @@ use App\Models\ActivityLog;
 
 class Client extends Model
 {
-    use HasFactory, SoftDeletes , HasActivityLogs;
+    use HasFactory, SoftDeletes, HasActivityLogs;
 
     protected $fillable = [
         'assigned_to',
@@ -29,10 +29,10 @@ class Client extends Model
     {
         return $this->belongsTo(User::class, 'assigned_to');
     }
-public function latestActivity()
-{
-    return $this->morphOne(ActivityLog::class, 'subject')->latestOfMany();
-}
+    public function latestActivity()
+    {
+        return $this->morphOne(ActivityLog::class, 'subject')->latestOfMany();
+    }
     public function getStatusLabelAttribute(): string
     {
         return match ($this->status) {
@@ -44,30 +44,40 @@ public function latestActivity()
         };
     }
     public function followups()
-{
-    return $this->hasMany(ClientFollowup::class);
-}
-public function latestFollowup()
-{
-    return $this->hasOne(ClientFollowup::class)->latestOfMany();
-}
-public function tasks()
-{
-    return $this->hasMany(Task::class);
-}
+    {
+        return $this->hasMany(ClientFollowup::class);
+    }
+    public function latestFollowup()
+    {
+        return $this->hasOne(ClientFollowup::class)->latestOfMany();
+    }
+    public function tasks()
+    {
+        return $this->hasMany(Task::class);
+    }
 
-public function sales()
-{
-    return $this->hasMany(Sale::class);
-}
-public function projects()
-{
-    return $this->hasMany(Project::class);
-}
-public function assignedMember()
-{
-    return $this->hasOne(Member::class, 'user_id', 'assigned_to');
-}
+    public function sales()
+    {
+        return $this->hasMany(Sale::class);
+    }
+    public function projects()
+    {
+        return $this->hasMany(Project::class);
+    }
+    public function assignedMember()
+    {
+        return $this->hasOne(Member::class, 'user_id', 'assigned_to');
+    }
+    public function quotations()
+    {
+        return $this->hasMany(Quotation::class);
+    }
+
+    public function openQuotations()
+    {
+        return $this->hasMany(Quotation::class)
+            ->where('status', 'open');
+    }
     public function getStatusBadgeClassAttribute(): string
     {
         return match ($this->status) {

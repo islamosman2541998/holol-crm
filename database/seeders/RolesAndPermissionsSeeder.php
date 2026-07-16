@@ -80,7 +80,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'projects.create',
             'projects.edit',
             'projects.delete',
-
+            'quotations.view',
+            'quotations.create',
+            'quotations.edit',
+            'quotations.delete',
+            'quotations.change_status',
+            'quotations.convert_to_sale',
             'payments.view',
             'payments.create',
             'payments.edit',

@@ -17,7 +17,8 @@ use App\Http\Controllers\Admin\TeamController;
 use App\Http\Controllers\Admin\MemberController;
 use App\Http\Controllers\Admin\TaskController;
 use App\Http\Controllers\Admin\ProjectController;
-
+use App\Http\Controllers\Admin\QuotationController;
+use App\Http\Controllers\Admin\ReportController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -70,6 +71,63 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::delete('/teams/{team}', [TeamController::class, 'destroy'])
         ->middleware('permission:teams.delete')
         ->name('teams.destroy');
+
+    Route::get('/reports/clients', [ReportController::class, 'clients'])
+        ->middleware('permission:reports.view')
+        ->name('reports.clients');
+        Route::get('/reports/leads', [ReportController::class, 'leads'])
+    ->middleware('permission:reports.view')
+    ->name('reports.leads');
+    Route::get('/reports/sales-payments', [ReportController::class, 'salesPayments'])
+    ->middleware('permission:reports.view')
+    ->name('reports.sales-payments');
+    Route::get('/reports/quotations', [ReportController::class, 'quotations'])
+    ->middleware('permission:reports.view')
+    ->name('reports.quotations');
+    Route::get('/quotations', [QuotationController::class, 'index'])
+        ->middleware('permission:quotations.view')
+        ->name('quotations.index');
+
+    Route::get('/quotations/create', [QuotationController::class, 'create'])
+        ->middleware('permission:quotations.create')
+        ->name('quotations.create');
+
+    Route::post('/quotations', [QuotationController::class, 'store'])
+        ->middleware('permission:quotations.create')
+        ->name('quotations.store');
+
+    Route::get('/quotations/{quotation}', [QuotationController::class, 'show'])
+        ->middleware('permission:quotations.view')
+        ->name('quotations.show');
+
+    Route::get('/quotations/{quotation}/edit', [QuotationController::class, 'edit'])
+        ->middleware('permission:quotations.edit')
+        ->name('quotations.edit');
+
+    Route::put('/quotations/{quotation}', [QuotationController::class, 'update'])
+        ->middleware('permission:quotations.edit')
+        ->name('quotations.update');
+
+    Route::patch('/quotations/{quotation}/status', [QuotationController::class, 'changeStatus'])
+        ->middleware('permission:quotations.change_status')
+        ->name('quotations.change-status');
+
+    Route::post('/quotations/{quotation}/create-sale', [QuotationController::class, 'createSale'])
+        ->middleware('permission:quotations.convert_to_sale')
+        ->name('quotations.create-sale');
+
+    Route::delete('/quotations/{quotation}', [QuotationController::class, 'destroy'])
+        ->middleware('permission:quotations.delete')
+        ->name('quotations.destroy');
+    Route::post('/sales/{sale}/payments', [PaymentController::class, 'store'])
+        ->middleware('permission:payments.create')
+        ->name('sales.payments.store');
+    Route::get('/quotations/{quotation}/pdf', [QuotationController::class, 'pdf'])
+        ->middleware('permission:quotations.view')
+        ->name('quotations.pdf');
+    Route::delete('/payments/{payment}', [PaymentController::class, 'destroy'])
+        ->middleware('permission:payments.delete')
+        ->name('payments.destroy');
     Route::get('/members', [MemberController::class, 'index'])
         ->middleware('permission:members.view')
         ->name('members.index');

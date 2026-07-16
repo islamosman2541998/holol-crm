@@ -7,17 +7,32 @@ use App\Models\Project;
 use App\Models\Team;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Livewire\Attributes\Url;
 
 class ProjectIndex extends Component
 {
     use WithPagination;
 
+    #[Url(except: '')]
     public string $search = '';
+
+    #[Url(except: '')]
     public string $status = '';
+
+    #[Url(except: '')]
     public string $priority = '';
+
+    #[Url(except: '')]
     public string $teamId = '';
+
+    #[Url(except: '')]
     public string $managerMemberId = '';
+
+    #[Url(except: '')]
     public string $dateFilter = '';
+
+    #[Url(except: '')]
+    public string $statusGroup = '';
 
     protected string $paginationTheme = 'bootstrap';
 
@@ -30,7 +45,10 @@ class ProjectIndex extends Component
     {
         $this->resetPage();
     }
-
+    public function updatingStatusGroup(): void
+    {
+        $this->resetPage();
+    }
     public function updatingPriority(): void
     {
         $this->resetPage();
@@ -60,6 +78,7 @@ class ProjectIndex extends Component
             'teamId',
             'managerMemberId',
             'dateFilter',
+            'statusGroup',
         ]);
 
         $this->resetPage();
@@ -99,6 +118,12 @@ class ProjectIndex extends Component
             })
             ->when($this->status, function ($query) {
                 $query->where('status', $this->status);
+            })
+            ->when($this->statusGroup, function ($query) {
+                match ($this->statusGroup) {
+                    'active' => $query->whereIn('status', ['new', 'planning', 'in_progress', 'on_hold']),
+                    default => null,
+                };
             })
             ->when($this->priority, function ($query) {
                 $query->where('priority', $this->priority);

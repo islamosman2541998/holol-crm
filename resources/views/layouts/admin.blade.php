@@ -73,6 +73,21 @@
         </script>
     @endif
 @stack('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.sidebar-dropdown-toggle').forEach(function (button) {
+            button.addEventListener('click', function () {
+                const dropdown = button.closest('.sidebar-dropdown');
+
+                if (!dropdown) {
+                    return;
+                }
+
+                dropdown.classList.toggle('is-open');
+            });
+        });
+    });
+</script>
 </body>
 
 </html>

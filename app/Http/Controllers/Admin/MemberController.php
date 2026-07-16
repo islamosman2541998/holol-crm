@@ -7,7 +7,10 @@ use App\Models\Member;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class MemberController extends Controller
 {
@@ -36,39 +39,72 @@ class MemberController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('admin.members.create', compact('users', 'teams', 'managers'));
+        return view('admin.members.create', compact(
+            'users',
+            'teams',
+            'managers'
+        ));
     }
 
     public function store(Request $request)
     {
         $data = $this->validateMember($request);
-
-        if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image')->store('members', 'public');
+        if (! empty($data['user_id'])) {
+            $this->fillMemberDataFromLinkedUser($data);
         }
+        DB::transaction(function () use ($request, &$data) {
+            if (
+                empty($data['user_id']) &&
+                $request->boolean('create_login_account')
+            ) {
+                $user = User::query()->create([
+                    'name' => $data['name'],
+                    'email' => $data['email'],
+                    'phone' => $data['mobile'] ?? $data['phone'] ?? null,
+                    'password' => Hash::make($data['login_password']),
+                    'status' => true,
+                ]);
 
-        $member = Member::query()->create($data);
+                $user->forceFill([
+                    'email_verified_at' => now(),
+                ])->save();
 
-        $member->load(['user', 'team']);
-        $member->syncUserTeamRole();
+                $data['user_id'] = $user->id;
+            }
 
-        $member->logActivity(
-            event: 'created',
-            title: 'تم إنشاء العضو',
-            description: 'تم إضافة عضو جديد باسم: ' . $member->name,
-            newValues: $member->only([
-                'user_id',
-                'team_id',
-                'manager_id',
-                'name',
-                'job_title',
-                'department',
-                'email',
-                'mobile',
-                'is_manager',
-                'status',
-            ])
-        );
+            unset(
+                $data['create_login_account'],
+                $data['login_password'],
+                $data['login_password_confirmation']
+            );
+
+            if ($request->hasFile('image')) {
+                $data['image'] = $request->file('image')->store('members', 'public');
+            }
+
+            $member = Member::query()->create($data);
+
+            $member->load(['user', 'team']);
+            $member->syncUserTeamRole();
+
+            $member->logActivity(
+                event: 'created',
+                title: 'تم إنشاء العضو',
+                description: 'تم إضافة عضو جديد باسم: ' . $member->name,
+                newValues: $member->only([
+                    'user_id',
+                    'team_id',
+                    'manager_id',
+                    'name',
+                    'job_title',
+                    'department',
+                    'email',
+                    'mobile',
+                    'is_manager',
+                    'status',
+                ])
+            );
+        });
 
         return redirect()
             ->route('admin.members.index')
@@ -78,8 +114,8 @@ class MemberController extends Controller
     public function show(Member $member)
     {
         $member->load([
-            'user',
-            'team',
+            'user.roles',
+            'team.manager',
             'directManager',
             'managedMembers.user',
             'managedMembers.team',
@@ -92,18 +128,26 @@ class MemberController extends Controller
     public function edit(Member $member)
     {
         $users = User::query()
-            ->where('status', true)
             ->where(function ($query) use ($member) {
-                $query->whereDoesntHave('member')
-                    ->orWhere('id', $member->user_id);
+                $query->where(function ($query) {
+                    $query->where('status', true)
+                        ->whereDoesntHave('member');
+                });
+
+                if ($member->user_id) {
+                    $query->orWhere('id', $member->user_id);
+                }
             })
             ->orderBy('name')
             ->get();
 
         $teams = Team::query()
             ->where(function ($query) use ($member) {
-                $query->where('status', true)
-                    ->orWhere('id', $member->team_id);
+                $query->where('status', true);
+
+                if ($member->team_id) {
+                    $query->orWhere('id', $member->team_id);
+                }
             })
             ->orderBy('name')
             ->get();
@@ -112,71 +156,36 @@ class MemberController extends Controller
             ->where('is_manager', true)
             ->where('id', '!=', $member->id)
             ->where(function ($query) use ($member) {
-                $query->where('status', 'active')
-                    ->orWhere('id', $member->manager_id);
+                $query->where('status', 'active');
+
+                if ($member->manager_id) {
+                    $query->orWhere('id', $member->manager_id);
+                }
             })
             ->with('team')
             ->orderBy('name')
             ->get();
-        return view('admin.members.edit', compact('member', 'users', 'teams', 'managers'));
+
+        return view('admin.members.edit', compact(
+            'member',
+            'users',
+            'teams',
+            'managers'
+        ));
     }
 
     public function update(Request $request, Member $member)
     {
-        $oldTeamId = $member->team_id;
-        $oldUser = $member->user;
-        $oldTeam = $member->team;
-        $oldValues = $member->only([
-            'user_id',
-            'team_id',
-            'manager_id',
-            'name',
-            'job_title',
-            'department',
-            'email',
-            'phone',
-            'mobile',
-            'hire_date',
-            'is_manager',
-            'status',
-            'notes',
-        ]);
-
         $data = $this->validateMember($request, $member);
-        if (
-            $member->managedTeams()->exists() &&
-            ! (bool) ($data['is_manager'] ?? false)
-        ) {
-            return back()
-                ->withInput()
-                ->with('error', 'لا يمكن إلغاء صفة المدير لأن هذا العضو مدير لفريق');
+        if (! empty($data['user_id'])) {
+            $this->fillMemberDataFromLinkedUser($data);
         }
-        if ($request->hasFile('image')) {
-            if ($member->image) {
-                Storage::disk('public')->delete($member->image);
-            }
+        DB::transaction(function () use ($request, $member, &$data) {
+            $oldTeamId = $member->team_id;
+            $oldUser = $member->user;
+            $oldTeam = $member->team;
 
-            $data['image'] = $request->file('image')->store('members', 'public');
-        }
-
-        $member->update($data);
-        if (
-            $oldUser &&
-            $oldTeam &&
-            $oldUser->id !== (int) ($data['user_id'] ?? 0) &&
-            $oldUser->hasRole($oldTeam->role_name)
-        ) {
-            $oldUser->removeRole($oldTeam->role_name);
-        }
-        $member->load(['user', 'team']);
-        $member->syncUserTeamRole($oldTeamId);
-
-        $member->logActivity(
-            event: 'updated',
-            title: 'تم تحديث العضو',
-            description: 'تم تحديث بيانات العضو: ' . $member->name,
-            oldValues: $oldValues,
-            newValues: $member->only([
+            $oldValues = $member->only([
                 'user_id',
                 'team_id',
                 'manager_id',
@@ -190,8 +199,86 @@ class MemberController extends Controller
                 'is_manager',
                 'status',
                 'notes',
-            ])
-        );
+            ]);
+
+            if (
+                $member->managedTeams()->exists() &&
+                ! (bool) ($data['is_manager'] ?? false)
+            ) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'is_manager' => 'لا يمكن إلغاء صفة المدير لأن هذا العضو مدير لفريق',
+                ]);
+            }
+
+            if (
+                empty($data['user_id']) &&
+                $request->boolean('create_login_account')
+            ) {
+                $user = User::query()->create([
+                    'name' => $data['name'],
+                    'email' => $data['email'],
+                    'phone' => $data['mobile'] ?? $data['phone'] ?? null,
+                    'password' => Hash::make($data['login_password']),
+                    'status' => true,
+                ]);
+
+                $user->forceFill([
+                    'email_verified_at' => now(),
+                ])->save();
+
+                $data['user_id'] = $user->id;
+            }
+
+            unset(
+                $data['create_login_account'],
+                $data['login_password'],
+                $data['login_password_confirmation']
+            );
+
+            if ($request->hasFile('image')) {
+                if ($member->image) {
+                    Storage::disk('public')->delete($member->image);
+                }
+
+                $data['image'] = $request->file('image')->store('members', 'public');
+            }
+
+            $member->update($data);
+
+            if (
+                $oldUser &&
+                $oldTeam &&
+                $oldUser->id !== (int) ($data['user_id'] ?? 0) &&
+                $oldUser->hasRole($oldTeam->role_name)
+            ) {
+                $oldUser->removeRole($oldTeam->role_name);
+            }
+
+            $member->load(['user', 'team']);
+            $member->syncUserTeamRole($oldTeamId);
+
+            $member->logActivity(
+                event: 'updated',
+                title: 'تم تحديث العضو',
+                description: 'تم تحديث بيانات العضو: ' . $member->name,
+                oldValues: $oldValues,
+                newValues: $member->only([
+                    'user_id',
+                    'team_id',
+                    'manager_id',
+                    'name',
+                    'job_title',
+                    'department',
+                    'email',
+                    'phone',
+                    'mobile',
+                    'hire_date',
+                    'is_manager',
+                    'status',
+                    'notes',
+                ])
+            );
+        });
 
         return redirect()
             ->route('admin.members.index')
@@ -214,6 +301,10 @@ class MemberController extends Controller
 
         $member->removeTeamRole();
 
+        if ($member->image) {
+            Storage::disk('public')->delete($member->image);
+        }
+
         $member->logActivity(
             event: 'deleted',
             title: 'تم حذف العضو',
@@ -227,18 +318,39 @@ class MemberController extends Controller
             ->route('admin.members.index')
             ->with('success', 'تم حذف العضو بنجاح');
     }
+    private function fillMemberDataFromLinkedUser(array &$data): void
+    {
+        if (empty($data['user_id'])) {
+            return;
+        }
 
+        $user = User::query()->find($data['user_id']);
+
+        if (! $user) {
+            return;
+        }
+
+        $data['name'] = $user->name;
+        $data['email'] = $user->email;
+        $data['mobile'] = $user->phone ?: ($data['mobile'] ?? null);
+    }
     private function validateMember(Request $request, ?Member $member = null): array
     {
-        $memberId = $member?->id ?? 'NULL';
+        $creatingLoginAccount = $request->boolean('create_login_account')
+            && ! $request->filled('user_id');
 
         return $request->validate([
             'user_id' => [
                 'nullable',
                 'exists:users,id',
-                'unique:members,user_id,' . $memberId,
+                Rule::unique('members', 'user_id')->ignore($member?->id),
             ],
-            'team_id' => ['nullable', 'exists:teams,id'],
+
+            'team_id' => [
+                'nullable',
+                'exists:teams,id',
+            ],
+
             'manager_id' => [
                 'nullable',
                 'exists:members,id',
@@ -248,21 +360,91 @@ class MemberController extends Controller
                     }
                 },
             ],
-            'name' => ['required', 'string', 'max:255'],
-            'job_title' => ['nullable', 'string', 'max:255'],
-            'department' => ['nullable', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:50'],
-            'mobile' => ['nullable', 'string', 'max:50'],
-            'image' => ['nullable', 'image', 'max:2048'],
-            'hire_date' => ['nullable', 'date'],
-            'is_manager' => ['nullable', 'boolean'],
-            'status' => ['required', 'in:active,inactive,on_leave,left'],
-            'notes' => ['nullable', 'string'],
+
+            'name' => [
+                $request->filled('user_id') ? 'nullable' : 'required',
+                'string',
+                'max:255',
+            ],
+
+            'job_title' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
+
+            'department' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
+
+            'email' => [
+                $creatingLoginAccount ? 'required' : 'nullable',
+                'email',
+                'max:255',
+                $creatingLoginAccount
+                    ? Rule::unique('users', 'email')->ignore($member?->user_id)
+                    : null,
+            ],
+
+            'phone' => [
+                'nullable',
+                'string',
+                'max:50',
+            ],
+
+            'mobile' => [
+                'nullable',
+                'string',
+                'max:50',
+            ],
+
+            'image' => [
+                'nullable',
+                'image',
+                'max:2048',
+            ],
+
+            'hire_date' => [
+                'nullable',
+                'date',
+            ],
+
+            'is_manager' => [
+                'nullable',
+                'boolean',
+            ],
+
+            'status' => [
+                'required',
+                'in:active,inactive,on_leave,left',
+            ],
+
+            'notes' => [
+                'nullable',
+                'string',
+            ],
+
+            'create_login_account' => [
+                'nullable',
+                'boolean',
+            ],
+
+            'login_password' => [
+                $creatingLoginAccount ? 'required' : 'nullable',
+                'confirmed',
+                'min:8',
+            ],
         ], [
             'user_id.unique' => 'حساب الدخول مرتبط بعضو آخر بالفعل',
             'name.required' => 'اسم العضو مطلوب',
+            'email.required' => 'الإيميل مطلوب عند إنشاء حساب دخول',
             'email.email' => 'صيغة البريد الإلكتروني غير صحيحة',
+            'email.unique' => 'هذا الإيميل مستخدم بالفعل في حساب دخول آخر',
+            'login_password.required' => 'الباسورد مطلوب عند إنشاء حساب دخول',
+            'login_password.confirmed' => 'تأكيد الباسورد غير مطابق',
+            'login_password.min' => 'الباسورد يجب ألا يقل عن 8 حروف',
             'image.image' => 'الملف يجب أن يكون صورة',
             'image.max' => 'حجم الصورة لا يزيد عن 2MB',
             'status.required' => 'حالة العضو مطلوبة',

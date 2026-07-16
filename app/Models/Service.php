@@ -33,7 +33,10 @@ class Service extends Model
     {
         return $this->status ? 'نشط' : 'غير نشط';
     }
-
+public function quotationItems()
+{
+    return $this->hasMany(QuotationItem::class);
+}
     public function getStatusBadgeClassAttribute(): string
     {
         return $this->status ? 'bg-success' : 'bg-secondary';

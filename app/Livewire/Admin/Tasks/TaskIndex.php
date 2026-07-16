@@ -7,17 +7,28 @@ use App\Models\Task;
 use App\Models\Team;
 use Livewire\Component;
 use Livewire\WithPagination;
-
+use Livewire\Attributes\Url;
 class TaskIndex extends Component
 {
     use WithPagination;
 
-    public string $search = '';
-    public string $status = '';
-    public string $priority = '';
-    public string $assignedMemberId = '';
-    public string $teamId = '';
-    public string $dateFilter = '';
+   #[Url(except: '')]
+public string $search = '';
+
+#[Url(except: '')]
+public string $status = '';
+
+#[Url(except: '')]
+public string $priority = '';
+
+#[Url(except: '')]
+public string $assignedMemberId = '';
+
+#[Url(except: '')]
+public string $teamId = '';
+
+#[Url(except: '')]
+public string $dateFilter = '';
 
     protected string $paginationTheme = 'bootstrap';
 

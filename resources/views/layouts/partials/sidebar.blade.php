@@ -30,13 +30,7 @@
                 <span>العملاء</span>
             </a>
         @endcan
-        @can('followups.view')
-            <a href="{{ route('admin.followups.index') }}"
-                class="sidebar-link {{ request()->routeIs('admin.followups.*') ? 'active' : '' }}">
-                <i class="bi bi-chat-dots"></i>
-                <span>المتابعات</span>
-            </a>
-        @endcan
+
 
         @can('leads.view')
             <a href="{{ route('admin.leads.index') }}"
@@ -45,15 +39,15 @@
                 <span>Leads </span>
             </a>
         @endcan
-        @can('leads.view')
-            <a href="{{ route('admin.lead-followups.index') }}"
-                class="sidebar-link {{ request()->routeIs('admin.lead-followups.*') ? 'active' : '' }}">
-                <i class="bi bi-chat-left-dots"></i>
-                <span>متابعات Leads</span>
+
+
+        @can('quotations.view')
+            <a href="{{ route('admin.quotations.index') }}"
+                class="sidebar-link {{ request()->routeIs('admin.quotations.*') ? 'active' : '' }}">
+                <i class="bi bi-receipt-cutoff"></i>
+                <span>عروض الأسعار</span>
             </a>
         @endcan
-
-
 
         @can('sales.view')
             <a href="{{ route('admin.sales.index') }}"
@@ -106,6 +100,70 @@
                 <span>المدفوعات</span>
             </a>
         @endcan
+        @canany(['reports.view', 'followups.view', 'leads.view'])
+            @php
+                $reportsOpen =
+                    request()->routeIs('admin.reports.*') ||
+                    request()->routeIs('admin.followups.*') ||
+                    request()->routeIs('admin.lead-followups.*');
+            @endphp
+
+            <div class="sidebar-dropdown {{ $reportsOpen ? 'is-open' : '' }}">
+                <button type="button" class="sidebar-link sidebar-dropdown-toggle {{ $reportsOpen ? 'active' : '' }}">
+                    <i class="bi bi-file-earmark-bar-graph"></i>
+                    <span>التقارير</span>
+                    <i class="bi bi-chevron-down dropdown-arrow"></i>
+                </button>
+
+                <div class="sidebar-submenu">
+                    <div class="sidebar-submenu-inner">
+                        @can('reports.view')
+                            <a href="{{ route('admin.reports.clients') }}"
+                                class="sidebar-sublink {{ request()->routeIs('admin.reports.clients') ? 'active' : '' }}">
+                                <i class="bi bi-person-vcard"></i>
+                                <span>تقرير العملاء</span>
+                            </a>
+                        @endcan
+                        @can('reports.view')
+                            <a href="{{ route('admin.reports.leads') }}"
+                                class="sidebar-sublink {{ request()->routeIs('admin.reports.leads') ? 'active' : '' }}">
+                                <i class="bi bi-person-lines-fill"></i>
+                                <span>تقرير Leads</span>
+                            </a>
+                        @endcan
+                        @can('followups.view')
+                            <a href="{{ route('admin.followups.index') }}"
+                                class="sidebar-sublink {{ request()->routeIs('admin.followups.*') ? 'active' : '' }}">
+                                <i class="bi bi-chat-dots"></i>
+                                <span>متابعات العملاء</span>
+                            </a>
+                        @endcan
+
+                        @can('leads.view')
+                            <a href="{{ route('admin.lead-followups.index') }}"
+                                class="sidebar-sublink {{ request()->routeIs('admin.lead-followups.*') ? 'active' : '' }}">
+                                <i class="bi bi-chat-left-dots"></i>
+                                <span>متابعات Leads</span>
+                            </a>
+                        @endcan
+                        @can('reports.view')
+                            <a href="{{ route('admin.reports.sales-payments') }}"
+                                class="sidebar-sublink {{ request()->routeIs('admin.reports.sales-payments') ? 'active' : '' }}">
+                                <i class="bi bi-cash-stack"></i>
+                                <span>تقرير المبيعات والمدفوعات</span>
+                            </a>
+                        @endcan
+                        @can('reports.view')
+                            <a href="{{ route('admin.reports.quotations') }}"
+                                class="sidebar-sublink {{ request()->routeIs('admin.reports.quotations') ? 'active' : '' }}">
+                                <i class="bi bi-receipt-cutoff"></i>
+                                <span>تقرير عروض الأسعار</span>
+                            </a>
+                        @endcan
+                    </div>
+                </div>
+            </div>
+        @endcanany
         @can('users.view')
             <a href="{{ route('admin.users.index') }}"
                 class="sidebar-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
