@@ -3,6 +3,8 @@
 namespace App\Exports;
 
 use App\Models\Quotation;
+use App\Traits\AuthorizesOwnedRecords;
+use App\Traits\SanitizesExcelFormulas;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
@@ -24,6 +26,8 @@ class QuotationReportExport extends DefaultValueBinder implements
     WithColumnFormatting,
     WithCustomValueBinder
 {
+    use AuthorizesOwnedRecords, SanitizesExcelFormulas;
+
     public function __construct(
         private readonly array $filters = []
     ) {
@@ -124,7 +128,7 @@ class QuotationReportExport extends DefaultValueBinder implements
 
     public function bindValue(Cell $cell, $value): bool
     {
-        if (in_array($cell->getColumn(), ['D', 'E'])) {
+        if (in_array($cell->getColumn(), ['D', 'E']) || $this->looksLikeFormula($value)) {
             $cell->setValueExplicit((string) $value, DataType::TYPE_STRING);
             return true;
         }
@@ -134,14 +138,18 @@ class QuotationReportExport extends DefaultValueBinder implements
 
     private function query()
     {
-        return Quotation::query()
+        $query = Quotation::query()
             ->with([
                 'client',
                 'user',
                 'items.service',
                 'sale.payments',
             ])
-            ->withCount(['items'])
+            ->withCount(['items']);
+
+        $this->applyOwnedRecordScope($query, 'quotations.view_all', 'user_id');
+
+        return $query
             ->when($this->filters['search'] ?? null, function ($query, $search) {
                 $query->where(function ($query) use ($search) {
                     $query->where('quotation_number', 'like', '%' . $search . '%')

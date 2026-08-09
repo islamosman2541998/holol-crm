@@ -3,12 +3,15 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Traits\RestrictsPermissionGrants;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 
 class RoleController extends Controller
 {
+    use RestrictsPermissionGrants;
+
     public function index()
     {
         $roles = Role::query()
@@ -47,7 +50,7 @@ class RoleController extends Controller
             'guard_name' => 'web',
         ]);
 
-        $role->syncPermissions($data['permissions'] ?? []);
+        $role->syncPermissions($this->filterGrantablePermissions($data['permissions'] ?? []));
 
         return redirect()
             ->route('admin.roles.index')
@@ -91,7 +94,7 @@ class RoleController extends Controller
             'name' => $data['name'],
         ]);
 
-        $role->syncPermissions($data['permissions'] ?? []);
+        $role->syncPermissions($this->filterGrantablePermissions($data['permissions'] ?? []));
 
         return redirect()
             ->route('admin.roles.index')

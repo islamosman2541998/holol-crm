@@ -3,6 +3,8 @@
 namespace App\Exports;
 
 use App\Models\Lead;
+use App\Traits\AuthorizesOwnedRecords;
+use App\Traits\SanitizesExcelFormulas;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
@@ -24,6 +26,8 @@ class LeadReportExport extends DefaultValueBinder implements
     WithColumnFormatting,
     WithCustomValueBinder
 {
+    use AuthorizesOwnedRecords, SanitizesExcelFormulas;
+
     public function __construct(
         private readonly array $filters = []
     ) {
@@ -100,7 +104,7 @@ class LeadReportExport extends DefaultValueBinder implements
 
     public function bindValue(Cell $cell, $value): bool
     {
-        if (in_array($cell->getColumn(), ['I', 'J'])) {
+        if (in_array($cell->getColumn(), ['I', 'J']) || $this->looksLikeFormula($value)) {
             $cell->setValueExplicit((string) $value, DataType::TYPE_STRING);
             return true;
         }
@@ -127,6 +131,8 @@ class LeadReportExport extends DefaultValueBinder implements
         if ($trashedState === 'only') {
             $query->onlyTrashed();
         }
+
+        $this->applyOwnedRecordScope($query, 'leads.view_all', 'assigned_to');
 
         return $query
             ->with([

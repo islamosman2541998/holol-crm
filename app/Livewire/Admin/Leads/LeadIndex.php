@@ -4,13 +4,14 @@ namespace App\Livewire\Admin\Leads;
 
 use App\Models\Lead;
 use App\Models\User;
+use App\Traits\AuthorizesOwnedRecords;
 use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\Member;
 
 class LeadIndex extends Component
 {
-    use WithPagination;
+    use WithPagination, AuthorizesOwnedRecords;
 
     public string $search = '';
     public string $status = '';
@@ -48,7 +49,11 @@ class LeadIndex extends Component
     {
         $leads = Lead::query()
             ->where('status', '!=', 'converted')
-          ->with(['assignedUser', 'assignedMember.team', 'convertedClient', 'latestFollowup.user'])
+          ->with(['assignedUser', 'assignedMember.team', 'convertedClient', 'latestFollowup.user']);
+
+        $this->applyOwnedRecordScope($leads, 'leads.view_all', 'assigned_to');
+
+        $leads = $leads
             ->when($this->search, function ($query) {
                 $query->where(function ($query) {
                     $query->where('name', 'like', '%' . $this->search . '%')

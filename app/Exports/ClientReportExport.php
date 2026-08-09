@@ -3,6 +3,8 @@
 namespace App\Exports;
 
 use App\Models\Client;
+use App\Traits\AuthorizesOwnedRecords;
+use App\Traits\SanitizesExcelFormulas;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
@@ -24,6 +26,8 @@ class ClientReportExport extends DefaultValueBinder implements
     WithColumnFormatting,
     WithCustomValueBinder
 {
+    use AuthorizesOwnedRecords, SanitizesExcelFormulas;
+
     public function __construct(
         private readonly array $filters = []
     ) {
@@ -111,7 +115,7 @@ class ClientReportExport extends DefaultValueBinder implements
 
     public function bindValue(Cell $cell, $value): bool
     {
-        if (in_array($cell->getColumn(), ['I', 'J'])) {
+        if (in_array($cell->getColumn(), ['I', 'J']) || $this->looksLikeFormula($value)) {
             $cell->setValueExplicit((string) $value, DataType::TYPE_STRING);
             return true;
         }
@@ -121,7 +125,7 @@ class ClientReportExport extends DefaultValueBinder implements
 
     private function query()
     {
-        return Client::query()
+        $query = Client::query()
             ->with([
                 'assignedUser',
                 'assignedMember.team',
@@ -138,7 +142,11 @@ class ClientReportExport extends DefaultValueBinder implements
                 'sales',
                 'projects',
                 'tasks',
-            ])
+            ]);
+
+        $this->applyOwnedRecordScope($query, 'clients.view_all', 'assigned_to');
+
+        return $query
             ->when($this->filters['search'] ?? null, function ($query, $search) {
                 $query->where(function ($query) use ($search) {
                     $query->where('name', 'like', '%' . $search . '%')

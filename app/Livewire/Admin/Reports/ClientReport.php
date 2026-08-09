@@ -5,6 +5,9 @@ namespace App\Livewire\Admin\Reports;
 use App\Exports\ClientReportExport;
 use App\Models\Client;
 use App\Models\Member;
+use App\Models\Payment;
+use App\Models\Sale;
+use App\Traits\AuthorizesOwnedRecords;
 use Carbon\Carbon;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -13,7 +16,7 @@ use Livewire\Attributes\Url;
 
 class ClientReport extends Component
 {
-    use WithPagination;
+    use WithPagination, AuthorizesOwnedRecords;
 
     #[Url(except: '')]
     public string $search = '';
@@ -116,24 +119,11 @@ class ClientReport extends Component
 
     private function clientsQuery()
     {
-        return Client::query()
-            ->with([
-                'assignedUser',
-                'assignedMember.team',
-                'latestFollowup',
-                'followups',
-                'quotations.items.service',
-                'sales.payments',
-                'projects',
-                'tasks',
-            ])
-            ->withCount([
-                'followups',
-                'quotations',
-                'sales',
-                'projects',
-                'tasks',
-            ])
+        $query = Client::query();
+
+        $this->applyOwnedRecordScope($query, 'clients.view_all', 'assigned_to');
+
+        return $query
             ->when($this->search, function ($query) {
                 $query->where(function ($query) {
                     $query->where('name', 'like', '%' . $this->search . '%')
@@ -205,31 +195,36 @@ class ClientReport extends Component
 
     private function buildStats($query): array
     {
-        $clients = (clone $query)->get();
+        $statusCounts = (clone $query)
+            ->selectRaw('status, count(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
 
-        $salesTotal = 0;
-        $paidTotal = 0;
+        $withoutFollowups = (clone $query)->doesntHave('followups')->count();
 
-        foreach ($clients as $client) {
-            foreach ($client->sales as $sale) {
-                $salesTotal += (float) $sale->total;
-                $paidTotal += (float) $sale->payments->sum('amount');
-            }
-        }
+        $overdueFollowups = (clone $query)->whereHas('followups', function ($query) {
+            $query->whereNotNull('next_followup_at')
+                ->where('next_followup_at', '<', today())
+                ->whereNotIn('status', ['done', 'completed', 'cancelled']);
+        })->count();
+
+        $clientIds = (clone $query)->pluck('id');
+
+        $salesTotal = (float) Sale::query()->whereIn('client_id', $clientIds)->sum('total');
+
+        $paidTotal = (float) Payment::query()
+            ->whereHas('sale', function ($query) use ($clientIds) {
+                $query->whereIn('client_id', $clientIds);
+            })
+            ->sum('amount');
 
         return [
-            'clients_count' => $clients->count(),
-            'active_count' => $clients->where('status', 'active')->count(),
-            'new_count' => $clients->where('status', 'new')->count(),
-            'lost_count' => $clients->where('status', 'lost')->count(),
-            'without_followups' => $clients->filter(fn($client) => $client->followups->isEmpty())->count(),
-            'overdue_followups' => $clients->filter(function ($client) {
-                return $client->followups->contains(function ($followup) {
-                    return $followup->next_followup_at
-                        && $followup->next_followup_at->lt(today())
-                        && ! in_array($followup->status, ['done', 'completed', 'cancelled']);
-                });
-            })->count(),
+            'clients_count' => (int) $statusCounts->sum(),
+            'active_count' => (int) ($statusCounts['active'] ?? 0),
+            'new_count' => (int) ($statusCounts['new'] ?? 0),
+            'lost_count' => (int) ($statusCounts['lost'] ?? 0),
+            'without_followups' => $withoutFollowups,
+            'overdue_followups' => $overdueFollowups,
             'sales_total' => $salesTotal,
             'paid_total' => $paidTotal,
             'remaining_total' => max($salesTotal - $paidTotal, 0),
@@ -263,6 +258,23 @@ class ClientReport extends Component
         $stats = $this->buildStats(clone $query);
 
         $clients = $query
+            ->with([
+                'assignedUser',
+                'assignedMember.team',
+                'latestFollowup',
+                'followups',
+                'quotations.items.service',
+                'sales.payments',
+                'projects',
+                'tasks',
+            ])
+            ->withCount([
+                'followups',
+                'quotations',
+                'sales',
+                'projects',
+                'tasks',
+            ])
             ->latest()
             ->paginate($this->perPage);
 

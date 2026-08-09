@@ -26,7 +26,9 @@ Route::get('/', function () {
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
+    Route::post('/login', [AuthController::class, 'login'])
+        ->middleware('throttle:5,1')
+        ->name('login.submit');
 });
 
 Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
@@ -187,6 +189,11 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::delete('/projects/{project}', [ProjectController::class, 'destroy'])
         ->middleware('permission:projects.delete')
         ->name('projects.destroy');
+
+    Route::get('/projects/{project}/attachments/{attachment}/download', [ProjectController::class, 'downloadAttachment'])
+        ->middleware('permission:projects.view')
+        ->name('projects.attachments.download');
+
     Route::post('/teams/{team}/sync-members', [TeamController::class, 'syncMembers'])
         ->middleware('permission:teams.permissions')
         ->name('teams.sync-members');
@@ -222,6 +229,11 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::delete('/tasks/{task}', [TaskController::class, 'destroy'])
         ->middleware('permission:tasks.delete')
         ->name('tasks.destroy');
+
+    Route::get('/tasks/{task}/attachments/{attachment}/download', [TaskController::class, 'downloadAttachment'])
+        ->middleware('permission:tasks.view')
+        ->name('tasks.attachments.download');
+
     Route::get('/clients', [ClientController::class, 'index'])
         ->middleware('permission:clients.view')
         ->name('clients.index');

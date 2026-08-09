@@ -5,12 +5,15 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Member;
 use App\Models\Team;
+use App\Traits\RestrictsPermissionGrants;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Permission;
 
 class TeamController extends Controller
 {
+    use RestrictsPermissionGrants;
+
     public function index()
     {
         return view('admin.teams.index');
@@ -51,7 +54,7 @@ class TeamController extends Controller
 
         $team->ensureRole();
 
-        $team->syncRolePermissions($data['permissions'] ?? []);
+        $team->syncRolePermissions($this->filterGrantablePermissions($data['permissions'] ?? []));
 
         $team->syncMembersTeamRole();
 
@@ -156,7 +159,7 @@ class TeamController extends Controller
             $team->ensureRole();
         }
 
-        $team->syncRolePermissions($data['permissions'] ?? []);
+        $team->syncRolePermissions($this->filterGrantablePermissions($data['permissions'] ?? []));
 
         $team->syncMembersTeamRole();
 

@@ -7,6 +7,7 @@ use App\Models\Client;
 use App\Models\Member;
 use App\Models\Quotation;
 use App\Models\Service;
+use App\Traits\AuthorizesOwnedRecords;
 use Carbon\Carbon;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -14,7 +15,7 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class QuotationReport extends Component
 {
-    use WithPagination;
+    use WithPagination, AuthorizesOwnedRecords;
 
     public string $search = '';
     public string $status = '';
@@ -101,14 +102,18 @@ class QuotationReport extends Component
 
     private function quotationsQuery()
     {
-        return Quotation::query()
+        $query = Quotation::query()
             ->with([
                 'client',
                 'user',
                 'items.service',
                 'sale.payments',
             ])
-            ->withCount(['items'])
+            ->withCount(['items']);
+
+        $this->applyOwnedRecordScope($query, 'quotations.view_all', 'user_id');
+
+        return $query
             ->when($this->search, function ($query) {
                 $query->where(function ($query) {
                     $query->where('quotation_number', 'like', '%' . $this->search . '%')

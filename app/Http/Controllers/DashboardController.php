@@ -11,105 +11,133 @@ use App\Models\LeadFollowup;
 use App\Models\Member;
 use App\Models\Task;
 use App\Models\Project;
+use App\Traits\AuthorizesOwnedRecords;
 
 class DashboardController extends Controller
 {
+    use AuthorizesOwnedRecords;
+
     public function index()
     {
-        $clientsCount = Client::query()->count();
+        $clientQuery = Client::query();
+        $this->applyOwnedRecordScope($clientQuery, 'clients.view_all', 'assigned_to');
 
-        $newClientsCount = Client::query()
+        $clientsCount = (clone $clientQuery)->count();
+
+        $newClientsCount = (clone $clientQuery)
             ->where('status', 'new')
             ->count();
 
-        $activeClientsCount = Client::query()
+        $activeClientsCount = (clone $clientQuery)
             ->where('status', 'active')
             ->count();
 
-        $leadsCount = Lead::query()->count();
+        $leadQuery = Lead::query();
+        $this->applyOwnedRecordScope($leadQuery, 'leads.view_all', 'assigned_to');
 
-        $newLeadsCount = Lead::query()
+        $leadsCount = (clone $leadQuery)->count();
+
+        $newLeadsCount = (clone $leadQuery)
             ->where('status', 'new')
             ->count();
 
-        $qualifiedLeadsCount = Lead::query()
+        $qualifiedLeadsCount = (clone $leadQuery)
             ->where('status', 'qualified')
             ->count();
 
-        $convertedLeadsCount = Lead::query()
+        $convertedLeadsCount = (clone $leadQuery)
             ->where('status', 'converted')
             ->count();
 
-        $todayFollowupsCount = ClientFollowup::query()
+        $followupQuery = ClientFollowup::query()
+            ->whereHas('client', function ($query) {
+                $this->applyOwnedRecordScope($query, 'clients.view_all', 'assigned_to');
+            });
+
+        $todayFollowupsCount = (clone $followupQuery)
             ->whereDate('next_followup_at', today())
             ->count();
 
-        $overdueFollowupsCount = ClientFollowup::query()
+        $overdueFollowupsCount = (clone $followupQuery)
             ->where('status', 'pending')
             ->whereNotNull('next_followup_at')
             ->where('next_followup_at', '<', now())
             ->count();
 
-        $pendingFollowupsCount = ClientFollowup::query()
+        $pendingFollowupsCount = (clone $followupQuery)
             ->where('status', 'pending')
             ->count();
 
-        $salesTotal = Sale::query()
+        $saleQuery = Sale::query();
+        $this->applyOwnedRecordScope($saleQuery, 'sales.view_all', 'user_id');
+
+        $salesTotal = (clone $saleQuery)
             ->where('status', '!=', 'cancelled')
             ->sum('total');
 
         $paymentsTotal = Payment::query()
+            ->whereHas('sale', function ($query) {
+                $this->applyOwnedRecordScope($query, 'sales.view_all', 'user_id');
+            })
             ->sum('amount');
 
         $remainingTotal = max($salesTotal - $paymentsTotal, 0);
 
-        $monthlySalesTotal = Sale::query()
+        $monthlySalesTotal = (clone $saleQuery)
             ->where('status', '!=', 'cancelled')
             ->whereYear('sold_at', now()->year)
             ->whereMonth('sold_at', now()->month)
             ->sum('total');
 
-        $latestClients = Client::query()
+        $latestClients = (clone $clientQuery)
             ->with('assignedUser')
             ->latest()
             ->limit(5)
             ->get();
 
-        $latestFollowups = ClientFollowup::query()
+        $latestFollowups = (clone $followupQuery)
             ->with(['client', 'user'])
             ->latest()
             ->limit(5)
             ->get();
 
-        $latestSales = Sale::query()
+        $latestSales = (clone $saleQuery)
             ->with(['client', 'user', 'payments'])
             ->latest()
             ->limit(5)
             ->get();
 
-        $latestLeads = Lead::query()
+        $latestLeads = (clone $leadQuery)
             ->with('assignedUser')
             ->latest()
             ->limit(5)
             ->get();
-        $todayLeadFollowupsCount = LeadFollowup::query()
+
+        $leadFollowupQuery = LeadFollowup::query()
+            ->whereHas('lead', function ($query) {
+                $this->applyOwnedRecordScope($query, 'leads.view_all', 'assigned_to');
+            });
+
+        $todayLeadFollowupsCount = (clone $leadFollowupQuery)
             ->whereDate('next_followup_at', today())
             ->count();
 
-        $overdueLeadFollowupsCount = LeadFollowup::query()
+        $overdueLeadFollowupsCount = (clone $leadFollowupQuery)
             ->where('status', 'pending')
             ->whereNotNull('next_followup_at')
             ->where('next_followup_at', '<', now())
             ->count();
 
-        $pendingLeadFollowupsCount = LeadFollowup::query()
+        $pendingLeadFollowupsCount = (clone $leadFollowupQuery)
             ->where('status', 'pending')
             ->count();
-        $latestLeadFollowups = LeadFollowup::query()
+
+        $latestLeadFollowups = (clone $leadFollowupQuery)
             ->with(['lead', 'user'])
             ->latest()
             ->limit(5)
             ->get();
+
         $taskQuery = Task::query();
 
         $user = auth()->user();

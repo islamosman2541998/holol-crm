@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\Member;
 use App\Models\Project;
+use App\Models\ProjectAttachment;
 use App\Models\Service;
 use App\Models\Team;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class ProjectController extends Controller
@@ -330,6 +332,17 @@ class ProjectController extends Controller
         }
 
         return $code;
+    }
+
+    public function downloadAttachment(Project $project, ProjectAttachment $attachment)
+    {
+        $this->authorizeProjectAccess($project);
+
+        abort_unless((int) $attachment->project_id === (int) $project->id, 404);
+
+        abort_unless(Storage::disk('local')->exists($attachment->file_path), 404);
+
+        return Storage::disk('local')->download($attachment->file_path, $attachment->file_name);
     }
 
     private function authorizeProjectAccess(Project $project): void

@@ -4,13 +4,14 @@ namespace App\Livewire\Admin\Clients;
 
 use App\Models\Client;
 use App\Models\User;
+use App\Traits\AuthorizesOwnedRecords;
 use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\Member;
 
 class ClientIndex extends Component
 {
-    use WithPagination;
+    use WithPagination, AuthorizesOwnedRecords;
 
     public string $search = '';
     public string $status = '';
@@ -47,7 +48,12 @@ class ClientIndex extends Component
     public function render()
     {
         $clients = Client::query()
-            ->with(['assignedUser', 'assignedMember.team', 'latestFollowup.user'])->when($this->search, function ($query) {
+            ->with(['assignedUser', 'assignedMember.team', 'latestFollowup.user']);
+
+        $this->applyOwnedRecordScope($clients, 'clients.view_all', 'assigned_to');
+
+        $clients = $clients
+            ->when($this->search, function ($query) {
                 $query->where(function ($query) {
                     $query->where('name', 'like', '%' . $this->search . '%')
                         ->orWhere('company', 'like', '%' . $this->search . '%')

@@ -5,6 +5,7 @@ namespace App\Livewire\Admin\Reports;
 use App\Exports\LeadReportExport;
 use App\Models\Lead;
 use App\Models\Member;
+use App\Traits\AuthorizesOwnedRecords;
 use Carbon\Carbon;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -13,7 +14,7 @@ use Livewire\Attributes\Url;
 
 class LeadReport extends Component
 {
-    use WithPagination;
+    use WithPagination, AuthorizesOwnedRecords;
 
     #[Url(except: '')]
     public string $search = '';
@@ -138,19 +139,9 @@ class LeadReport extends Component
             $query->onlyTrashed();
         }
 
+        $this->applyOwnedRecordScope($query, 'leads.view_all', 'assigned_to');
+
         return $query
-            ->with([
-                'assignedUser',
-                'assignedMember.team',
-                'convertedClient',
-                'latestFollowup',
-                'followups',
-                'tasks',
-            ])
-            ->withCount([
-                'followups',
-                'tasks',
-            ])
             ->when($this->search, function ($query) {
                 $query->where(function ($query) {
                     $query->where('name', 'like', '%' . $this->search . '%')
@@ -216,25 +207,36 @@ class LeadReport extends Component
 
     private function buildStats($query): array
     {
-        $leads = (clone $query)->get();
+        $statusCounts = (clone $query)
+            ->selectRaw('status, count(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
 
-        $total = $leads->count();
-        $converted = $leads->filter(fn($lead) => $lead->converted_client_id || $lead->status === 'converted')->count();
+        $total = (int) $statusCounts->sum();
+
+        $converted = (clone $query)
+            ->where(function ($query) {
+                $query->whereNotNull('converted_client_id')
+                    ->orWhere('status', 'converted');
+            })
+            ->count();
+
+        $withoutFollowups = (clone $query)->doesntHave('followups')->count();
+
+        $overdueFollowups = (clone $query)->whereHas('followups', function ($query) {
+            $query->whereNotNull('next_followup_at')
+                ->where('next_followup_at', '<', today())
+                ->whereNotIn('status', ['done', 'completed', 'cancelled']);
+        })->count();
 
         return [
             'leads_count' => $total,
-            'new_count' => $leads->where('status', 'new')->count(),
-            'qualified_count' => $leads->where('status', 'qualified')->count(),
+            'new_count' => (int) ($statusCounts['new'] ?? 0),
+            'qualified_count' => (int) ($statusCounts['qualified'] ?? 0),
             'converted_count' => $converted,
-            'lost_count' => $leads->where('status', 'lost')->count(),
-            'without_followups' => $leads->filter(fn($lead) => $lead->followups->isEmpty())->count(),
-            'overdue_followups' => $leads->filter(function ($lead) {
-                return $lead->followups->contains(function ($followup) {
-                    return $followup->next_followup_at
-                        && $followup->next_followup_at->lt(today())
-                        && ! in_array($followup->status, ['done', 'completed', 'cancelled']);
-                });
-            })->count(),
+            'lost_count' => (int) ($statusCounts['lost'] ?? 0),
+            'without_followups' => $withoutFollowups,
+            'overdue_followups' => $overdueFollowups,
             'conversion_rate' => $total > 0 ? round(($converted / $total) * 100, 1) : 0,
         ];
     }
@@ -266,6 +268,18 @@ class LeadReport extends Component
         $stats = $this->buildStats(clone $query);
 
         $leads = $query
+            ->with([
+                'assignedUser',
+                'assignedMember.team',
+                'convertedClient',
+                'latestFollowup',
+                'followups',
+                'tasks',
+            ])
+            ->withCount([
+                'followups',
+                'tasks',
+            ])
             ->latest()
             ->paginate($this->perPage);
 

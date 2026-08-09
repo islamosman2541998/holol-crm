@@ -4,12 +4,13 @@ namespace App\Livewire\Admin\Leads;
 
 use App\Models\LeadFollowup;
 use App\Models\User;
+use App\Traits\AuthorizesOwnedRecords;
 use Livewire\Component;
 use Livewire\WithPagination;
 
 class LeadFollowupIndex extends Component
 {
-    use WithPagination;
+    use WithPagination, AuthorizesOwnedRecords;
 
     public string $search = '';
     public string $type = '';
@@ -61,7 +62,9 @@ class LeadFollowupIndex extends Component
     {
         abort_unless(auth()->user()->can('leads.edit'), 403);
 
-        $followup = LeadFollowup::query()->findOrFail($followupId);
+        $followup = LeadFollowup::query()->with('lead')->findOrFail($followupId);
+
+        $this->authorizeFollowupAccess($followup);
 
         $followup->update([
             'status' => 'done',
@@ -74,17 +77,27 @@ class LeadFollowupIndex extends Component
     {
         abort_unless(auth()->user()->can('leads.edit'), 403);
 
-        $followup = LeadFollowup::query()->findOrFail($followupId);
+        $followup = LeadFollowup::query()->with('lead')->findOrFail($followupId);
+
+        $this->authorizeFollowupAccess($followup);
 
         $followup->delete();
 
         $this->dispatch('toast', type: 'success', message: 'تم حذف المتابعة بنجاح');
     }
 
+    private function authorizeFollowupAccess(LeadFollowup $followup): void
+    {
+        $this->authorizeOwnedRecordAccess('leads.view_all', $followup->lead?->assigned_to);
+    }
+
     public function render()
     {
         $leadFollowups = LeadFollowup::query()
             ->with(['lead', 'user'])
+            ->whereHas('lead', function ($query) {
+                $this->applyOwnedRecordScope($query, 'leads.view_all', 'assigned_to');
+            })
             ->when($this->search, function ($query) {
                 $query->where(function ($query) {
                     $query->where('note', 'like', '%' . $this->search . '%')
@@ -130,21 +143,26 @@ class LeadFollowupIndex extends Component
             ->orderBy('name')
             ->get();
 
-        $todayCount = LeadFollowup::query()
+        $scopedLeadFollowups = fn() => LeadFollowup::query()
+            ->whereHas('lead', function ($query) {
+                $this->applyOwnedRecordScope($query, 'leads.view_all', 'assigned_to');
+            });
+
+        $todayCount = $scopedLeadFollowups()
             ->whereDate('next_followup_at', today())
             ->count();
 
-        $overdueCount = LeadFollowup::query()
+        $overdueCount = $scopedLeadFollowups()
             ->where('status', 'pending')
             ->whereNotNull('next_followup_at')
             ->where('next_followup_at', '<', now())
             ->count();
 
-        $pendingCount = LeadFollowup::query()
+        $pendingCount = $scopedLeadFollowups()
             ->where('status', 'pending')
             ->count();
 
-        $doneCount = LeadFollowup::query()
+        $doneCount = $scopedLeadFollowups()
             ->where('status', 'done')
             ->count();
 

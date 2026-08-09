@@ -5,8 +5,10 @@ namespace App\Livewire\Admin\Reports;
 use App\Exports\SalesPaymentsReportExport;
 use App\Models\Client;
 use App\Models\Member;
+use App\Models\Payment;
 use App\Models\Sale;
 use App\Models\Service;
+use App\Traits\AuthorizesOwnedRecords;
 use Carbon\Carbon;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -15,7 +17,7 @@ use Livewire\Attributes\Url;
 
 class SalesPaymentsReport extends Component
 {
-    use WithPagination;
+    use WithPagination, AuthorizesOwnedRecords;
 
     #[Url(except: '')]
     public string $search = '';
@@ -131,15 +133,11 @@ class SalesPaymentsReport extends Component
 
     private function salesQuery()
     {
-        return Sale::query()
-            ->with([
-                'client',
-                'user',
-                'quotation',
-                'items.service',
-                'payments.user',
-            ])
-            ->withCount(['items', 'payments'])
+        $query = Sale::query();
+
+        $this->applyOwnedRecordScope($query, 'sales.view_all', 'user_id');
+
+        return $query
             ->when($this->search, function ($query) {
                 $query->where(function ($query) {
                     $query->whereHas('client', function ($query) {
@@ -213,57 +211,42 @@ class SalesPaymentsReport extends Component
 
     private function buildStats($query): array
     {
-        $sales = (clone $query)->get();
+        $statusCounts = (clone $query)
+            ->selectRaw('status, count(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
 
-        $salesTotal = 0;
-        $paidTotal = 0;
+        $salesTotal = (float) (clone $query)->sum('total');
 
-        $methods = [
-            'cash' => 0,
-            'bank_transfer' => 0,
-            'instapay' => 0,
-            'vodafone_cash' => 0,
-            'other' => 0,
-        ];
+        $saleIds = (clone $query)->pluck('id');
 
-        foreach ($sales as $sale) {
-            $salesTotal += (float) $sale->total;
+        $paymentsQuery = Payment::query()
+            ->whereIn('sale_id', $saleIds)
+            ->when($this->paymentMethod, fn($q) => $q->where('payment_method', $this->paymentMethod))
+            ->when($this->paidFrom, fn($q) => $q->where('paid_at', '>=', Carbon::parse($this->paidFrom)->startOfDay()))
+            ->when($this->paidTo, fn($q) => $q->where('paid_at', '<=', Carbon::parse($this->paidTo)->endOfDay()));
 
-            foreach ($sale->payments as $payment) {
-                if ($this->paymentMethod && $payment->payment_method !== $this->paymentMethod) {
-                    continue;
-                }
+        $paidTotal = (float) (clone $paymentsQuery)->sum('amount');
 
-                if ($this->paidFrom && $payment->paid_at?->lt(Carbon::parse($this->paidFrom)->startOfDay())) {
-                    continue;
-                }
-
-                if ($this->paidTo && $payment->paid_at?->gt(Carbon::parse($this->paidTo)->endOfDay())) {
-                    continue;
-                }
-
-                $paidTotal += (float) $payment->amount;
-
-                if (array_key_exists($payment->payment_method, $methods)) {
-                    $methods[$payment->payment_method] += (float) $payment->amount;
-                }
-            }
-        }
+        $methodTotals = (clone $paymentsQuery)
+            ->selectRaw('payment_method, sum(amount) as aggregate')
+            ->groupBy('payment_method')
+            ->pluck('aggregate', 'payment_method');
 
         return [
-            'sales_count' => $sales->count(),
-            'pending_count' => $sales->where('status', 'pending')->count(),
-            'partial_count' => $sales->where('status', 'partial')->count(),
-            'paid_count' => $sales->where('status', 'paid')->count(),
-            'cancelled_count' => $sales->where('status', 'cancelled')->count(),
+            'sales_count' => (int) $statusCounts->sum(),
+            'pending_count' => (int) ($statusCounts['pending'] ?? 0),
+            'partial_count' => (int) ($statusCounts['partial'] ?? 0),
+            'paid_count' => (int) ($statusCounts['paid'] ?? 0),
+            'cancelled_count' => (int) ($statusCounts['cancelled'] ?? 0),
             'sales_total' => $salesTotal,
             'paid_total' => $paidTotal,
             'remaining_total' => max($salesTotal - $paidTotal, 0),
-            'cash_total' => $methods['cash'],
-            'bank_transfer_total' => $methods['bank_transfer'],
-            'instapay_total' => $methods['instapay'],
-            'vodafone_cash_total' => $methods['vodafone_cash'],
-            'other_total' => $methods['other'],
+            'cash_total' => (float) ($methodTotals['cash'] ?? 0),
+            'bank_transfer_total' => (float) ($methodTotals['bank_transfer'] ?? 0),
+            'instapay_total' => (float) ($methodTotals['instapay'] ?? 0),
+            'vodafone_cash_total' => (float) ($methodTotals['vodafone_cash'] ?? 0),
+            'other_total' => (float) ($methodTotals['other'] ?? 0),
         ];
     }
 
@@ -274,6 +257,14 @@ class SalesPaymentsReport extends Component
         $stats = $this->buildStats(clone $query);
 
         $sales = $query
+            ->with([
+                'client',
+                'user',
+                'quotation',
+                'items.service',
+                'payments.user',
+            ])
+            ->withCount(['items', 'payments'])
             ->latest()
             ->paginate($this->perPage);
 

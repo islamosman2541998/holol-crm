@@ -5,12 +5,13 @@ namespace App\Livewire\Admin\Payments;
 use App\Models\Payment;
 use App\Models\Sale;
 use App\Models\User;
+use App\Traits\AuthorizesOwnedRecords;
 use Livewire\Component;
 use Livewire\WithPagination;
 
 class PaymentIndex extends Component
 {
-    use WithPagination;
+    use WithPagination, AuthorizesOwnedRecords;
 
     public string $search = '';
     public string $paymentMethod = '';
@@ -68,6 +69,12 @@ class PaymentIndex extends Component
 
         $sale = $payment->sale;
 
+        if ($sale) {
+            $saleQuery = Sale::query()->whereKey($sale->id);
+            $this->applyOwnedRecordScope($saleQuery, 'sales.view_all', 'user_id');
+            abort_unless($saleQuery->exists(), 403);
+        }
+
         $payment->delete();
 
         if ($sale) {
@@ -105,6 +112,9 @@ class PaymentIndex extends Component
     {
         $query = Payment::query()
             ->with(['sale.client', 'user'])
+            ->whereHas('sale', function ($query) {
+                $this->applyOwnedRecordScope($query, 'sales.view_all', 'user_id');
+            })
             ->when($this->search, function ($query) {
                 $query->where(function ($query) {
                     $query->where('notes', 'like', '%' . $this->search . '%')

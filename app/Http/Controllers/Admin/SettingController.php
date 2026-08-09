@@ -37,10 +37,10 @@ class SettingController extends Controller
             'button_radius' => ['nullable', 'string', 'max:20'],
             'card_radius' => ['nullable', 'string', 'max:20'],
 
-            'system_logo' => ['nullable', 'image', 'max:2048'],
-            'favicon' => ['nullable', 'image', 'max:1024'],
-            'login_logo' => ['nullable', 'image', 'max:2048'],
-            'login_background' => ['nullable', 'image', 'max:4096'],
+            'system_logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:2048'],
+            'favicon' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:1024'],
+            'login_logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:2048'],
+            'login_background' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:4096'],
             'card_bg' => ['nullable', 'string', 'max:20'],
             'card_opacity' => ['nullable', 'numeric', 'min:0', 'max:1'],
         ]);

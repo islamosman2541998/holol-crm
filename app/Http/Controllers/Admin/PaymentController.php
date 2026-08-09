@@ -5,12 +5,15 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
 use App\Models\Sale;
+use App\Traits\AuthorizesOwnedRecords;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class PaymentController extends Controller
 {
+    use AuthorizesOwnedRecords;
+
     public function index()
     {
         return view('admin.payments.index');
@@ -19,6 +22,8 @@ class PaymentController extends Controller
     public function store(Request $request, Sale $sale)
     {
         abort_unless(auth()->user()->can('payments.create'), 403);
+
+        $this->authorizeOwnedRecordAccess('sales.view_all', $sale->user_id);
 
         $sale->load(['payments', 'quotation']);
 
@@ -74,6 +79,8 @@ class PaymentController extends Controller
         abort_unless(auth()->user()->can('payments.delete'), 403);
 
         $sale = $payment->sale;
+
+        $this->authorizeOwnedRecordAccess('sales.view_all', $sale?->user_id);
 
         DB::transaction(function () use ($payment, $sale) {
             $payment->delete();

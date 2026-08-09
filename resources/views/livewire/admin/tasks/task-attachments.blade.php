@@ -75,7 +75,7 @@
                                 <td>{{ $attachment->created_at->format('Y-m-d H:i') }}</td>
 
                                 <td class="text-end">
-                                    <a href="{{ asset('storage/' . $attachment->file_path) }}"
+                                    <a href="{{ route('admin.tasks.attachments.download', ['task' => $task->id, 'attachment' => $attachment->id]) }}"
                                        target="_blank"
                                        class="btn btn-sm btn-outline-dark">
                                         <i class="bi bi-download"></i>

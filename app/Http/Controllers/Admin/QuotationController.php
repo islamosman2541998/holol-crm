@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\Quotation;
 use App\Models\Service;
+use App\Traits\AuthorizesOwnedRecords;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -14,6 +15,8 @@ use Mpdf\Output\Destination;
 
 class QuotationController extends Controller
 {
+    use AuthorizesOwnedRecords;
+
     public function index()
     {
         return view('admin.quotations.index');
@@ -43,38 +46,53 @@ class QuotationController extends Controller
     {
         $data = $this->validateQuotation($request);
 
-        DB::transaction(function () use ($data) {
-            $totals = $this->calculateTotals($data);
+        $maxAttempts = 5;
 
-            $quotation = Quotation::query()->create([
-                'client_id' => $data['client_id'],
-                'user_id' => auth()->id(),
-                'quotation_number' => $this->generateQuotationNumber(),
-                'subtotal' => $totals['subtotal'],
-                'vat' => $totals['vat'],
-                'total' => $totals['total'],
-                'status' => 'pending',
-                'quotation_date' => $data['quotation_date'] ?? now()->toDateString(),
-                'valid_until' => $data['valid_until'] ?? null,
-                'notes' => $data['notes'] ?? null,
-            ]);
+        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+            try {
+                DB::transaction(function () use ($data) {
+                    $totals = $this->calculateTotals($data);
 
-            $this->syncItems($quotation, $data);
+                    $quotation = Quotation::query()->create([
+                        'client_id' => $data['client_id'],
+                        'user_id' => auth()->id(),
+                        'quotation_number' => $this->generateQuotationNumber(),
+                        'subtotal' => $totals['subtotal'],
+                        'vat' => $totals['vat'],
+                        'total' => $totals['total'],
+                        'status' => 'pending',
+                        'quotation_date' => $data['quotation_date'] ?? now()->toDateString(),
+                        'valid_until' => $data['valid_until'] ?? null,
+                        'notes' => $data['notes'] ?? null,
+                    ]);
 
-            $quotation->logActivity(
-                event: 'created',
-                title: 'تم إنشاء عرض سعر',
-                description: 'تم إنشاء عرض السعر رقم ' . $quotation->quotation_number,
-                newValues: $quotation->only([
-                    'client_id',
-                    'quotation_number',
-                    'subtotal',
-                    'vat',
-                    'total',
-                    'status',
-                ])
-            );
-        });
+                    $this->syncItems($quotation, $data);
+
+                    $quotation->logActivity(
+                        event: 'created',
+                        title: 'تم إنشاء عرض سعر',
+                        description: 'تم إنشاء عرض السعر رقم ' . $quotation->quotation_number,
+                        newValues: $quotation->only([
+                            'client_id',
+                            'quotation_number',
+                            'subtotal',
+                            'vat',
+                            'total',
+                            'status',
+                        ])
+                    );
+                });
+
+                break;
+            } catch (\Illuminate\Database\QueryException $e) {
+                $isDuplicateNumber = (int) $e->getCode() === 23000
+                    && str_contains($e->getMessage(), 'quotation_number');
+
+                if (! $isDuplicateNumber || $attempt === $maxAttempts) {
+                    throw $e;
+                }
+            }
+        }
 
         return redirect()
             ->route('admin.quotations.index')
@@ -83,6 +101,8 @@ class QuotationController extends Controller
 
     public function show(Quotation $quotation)
     {
+        $this->authorizeOwnedRecordAccess('quotations.view_all', $quotation->user_id);
+
         $quotation->load([
             'client',
             'user',
@@ -95,6 +115,8 @@ class QuotationController extends Controller
 
     public function edit(Quotation $quotation)
     {
+        $this->authorizeOwnedRecordAccess('quotations.view_all', $quotation->user_id);
+
         abort_if(in_array($quotation->status, ['closed', 'cancelled']), 403);
 
         $quotation->load('items');
@@ -117,6 +139,8 @@ class QuotationController extends Controller
 
     public function update(Request $request, Quotation $quotation)
     {
+        $this->authorizeOwnedRecordAccess('quotations.view_all', $quotation->user_id);
+
         abort_if(in_array($quotation->status, ['closed', 'cancelled']), 403);
 
         $data = $this->validateQuotation($request);
@@ -174,6 +198,8 @@ class QuotationController extends Controller
 
     public function changeStatus(Request $request, Quotation $quotation)
     {
+        $this->authorizeOwnedRecordAccess('quotations.view_all', $quotation->user_id);
+
         $data = $request->validate([
             'status' => ['required', 'in:pending,open,closed,cancelled'],
         ]);
@@ -219,6 +245,8 @@ class QuotationController extends Controller
 
     public function destroy(Quotation $quotation)
     {
+        $this->authorizeOwnedRecordAccess('quotations.view_all', $quotation->user_id);
+
         if ($quotation->sale) {
             return back()->with('error', 'لا يمكن حذف عرض سعر مرتبط بعملية بيع');
         }
@@ -261,6 +289,8 @@ class QuotationController extends Controller
     }
     public function pdf(Quotation $quotation)
     {
+        $this->authorizeOwnedRecordAccess('quotations.view_all', $quotation->user_id);
+
         $quotation->load([
             'client',
             'user',
@@ -333,6 +363,7 @@ class QuotationController extends Controller
 
         $lastNumber = Quotation::query()
             ->where('quotation_number', 'like', $prefix . '%')
+            ->lockForUpdate()
             ->count() + 1;
 
         return $prefix . str_pad((string) $lastNumber, 4, '0', STR_PAD_LEFT);

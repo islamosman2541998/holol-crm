@@ -36,7 +36,7 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'phone' => ['nullable', 'string', 'max:50'],
-            'password' => ['required', 'string', 'min:6', 'confirmed'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
             'role' => ['required', 'exists:roles,name'],
             'status' => ['nullable', 'boolean'],
         ], [
@@ -48,6 +48,12 @@ class UserController extends Controller
             'password.confirmed' => 'تأكيد كلمة المرور غير مطابق',
             'role.required' => 'يجب اختيار دور للمستخدم',
         ]);
+
+        if ($data['role'] === 'SEO Manager' && ! auth()->user()->hasRole('SEO Manager')) {
+            return back()
+                ->withErrors(['role' => 'لا يمكنك منح دور المدير SEO'])
+                ->withInput();
+        }
 
         $user = User::query()->create([
             'name' => $data['name'],
@@ -79,7 +85,7 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email,' . $user->id],
             'phone' => ['nullable', 'string', 'max:50'],
-            'password' => ['nullable', 'string', 'min:6', 'confirmed'],
+            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
             'role' => ['required', 'exists:roles,name'],
             'status' => ['nullable', 'boolean'],
         ], [
@@ -90,6 +96,18 @@ class UserController extends Controller
             'password.confirmed' => 'تأكيد كلمة المرور غير مطابق',
             'role.required' => 'يجب اختيار دور للمستخدم',
         ]);
+
+        if (auth()->id() === $user->id && $data['role'] !== $user->getRoleNames()->first()) {
+            return back()
+                ->withErrors(['role' => 'لا يمكنك تغيير دور حسابك الحالي'])
+                ->withInput();
+        }
+
+        if ($data['role'] === 'SEO Manager' && ! auth()->user()->hasRole('SEO Manager')) {
+            return back()
+                ->withErrors(['role' => 'لا يمكنك منح دور المدير SEO'])
+                ->withInput();
+        }
 
         $user->update([
             'name' => $data['name'],

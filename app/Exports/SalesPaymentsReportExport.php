@@ -3,15 +3,28 @@
 namespace App\Exports;
 
 use App\Models\Sale;
+use App\Traits\AuthorizesOwnedRecords;
+use App\Traits\SanitizesExcelFormulas;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
+use PhpOffice\PhpSpreadsheet\Cell\Cell;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
+use PhpOffice\PhpSpreadsheet\Cell\DefaultValueBinder;
 
-class SalesPaymentsReportExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize
+class SalesPaymentsReportExport extends DefaultValueBinder implements
+    FromCollection,
+    WithHeadings,
+    WithMapping,
+    ShouldAutoSize,
+    WithCustomValueBinder
 {
+    use AuthorizesOwnedRecords, SanitizesExcelFormulas;
+
     public function __construct(
         private readonly array $filters = []
     ) {}
@@ -90,6 +103,16 @@ class SalesPaymentsReportExport implements FromCollection, WithHeadings, WithMap
             $sale->notes,
         ];
     }
+public function bindValue(Cell $cell, $value): bool
+{
+    if ($this->looksLikeFormula($value)) {
+        $cell->setValueExplicit((string) $value, DataType::TYPE_STRING);
+        return true;
+    }
+
+    return parent::bindValue($cell, $value);
+}
+
 private function filteredPayments($sale): Collection
 {
     return $sale->payments->filter(function ($payment) {
@@ -110,7 +133,7 @@ private function filteredPayments($sale): Collection
 }
     private function query()
     {
-        return Sale::query()
+        $query = Sale::query()
             ->with([
                 'client',
                 'user',
@@ -118,7 +141,11 @@ private function filteredPayments($sale): Collection
                 'items.service',
                 'payments',
             ])
-            ->withCount(['items', 'payments'])
+            ->withCount(['items', 'payments']);
+
+        $this->applyOwnedRecordScope($query, 'sales.view_all', 'user_id');
+
+        return $query
             ->when($this->filters['search'] ?? null, function ($query, $search) {
                 $query->where(function ($query) use ($search) {
                     $query->whereHas('client', function ($query) use ($search) {

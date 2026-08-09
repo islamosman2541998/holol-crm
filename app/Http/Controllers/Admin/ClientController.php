@@ -5,17 +5,22 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\User;
+use App\Traits\AuthorizesOwnedRecords;
 use Illuminate\Http\Request;
 use App\Models\Member;
 
 class ClientController extends Controller
 {
+    use AuthorizesOwnedRecords;
+
     public function index()
     {
         return view('admin.clients.index');
     }
     public function show(Client $client)
     {
+        $this->authorizeOwnedRecordAccess('clients.view_all', $client->assigned_to);
+
         $client->load([
             'assignedUser',
             'openQuotations.items.service',
@@ -46,6 +51,8 @@ class ClientController extends Controller
 
     public function edit(Client $client)
     {
+        $this->authorizeOwnedRecordAccess('clients.view_all', $client->assigned_to);
+
         $members = Member::query()
             ->whereNotNull('user_id')
             ->with(['user', 'team'])
@@ -64,6 +71,8 @@ class ClientController extends Controller
 
     public function update(Request $request, Client $client)
     {
+        $this->authorizeOwnedRecordAccess('clients.view_all', $client->assigned_to);
+
         $data = $this->validateClient($request, $client);
 
         $client->update($data);
@@ -75,6 +84,8 @@ class ClientController extends Controller
 
     public function destroy(Client $client)
     {
+        $this->authorizeOwnedRecordAccess('clients.view_all', $client->assigned_to);
+
         $client->delete();
 
         return redirect()

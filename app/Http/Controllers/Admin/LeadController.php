@@ -6,18 +6,23 @@ use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\Lead;
 use App\Models\User;
+use App\Traits\AuthorizesOwnedRecords;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Member;
 
 class LeadController extends Controller
 {
+    use AuthorizesOwnedRecords;
+
     public function index()
     {
         return view('admin.leads.index');
     }
     public function show(Lead $lead)
     {
+        $this->authorizeOwnedRecordAccess('leads.view_all', $lead->assigned_to);
+
         $lead->load([
             'assignedUser',
             'convertedClient',
@@ -47,6 +52,8 @@ class LeadController extends Controller
 
     public function edit(Lead $lead)
     {
+        $this->authorizeOwnedRecordAccess('leads.view_all', $lead->assigned_to);
+
         $members = Member::query()
             ->with(['user', 'team'])
             ->where(function ($query) use ($lead) {
@@ -65,6 +72,8 @@ class LeadController extends Controller
 
     public function update(Request $request, Lead $lead)
     {
+        $this->authorizeOwnedRecordAccess('leads.view_all', $lead->assigned_to);
+
         $data = $this->validateLead($request);
 
         $lead->update($data);
@@ -76,6 +85,8 @@ class LeadController extends Controller
 
     public function destroy(Lead $lead)
     {
+        $this->authorizeOwnedRecordAccess('leads.view_all', $lead->assigned_to);
+
         $lead->delete();
 
         return redirect()
@@ -86,6 +97,8 @@ class LeadController extends Controller
     public function convert(Lead $lead)
     {
         abort_unless(auth()->user()->can('leads.convert'), 403);
+
+        $this->authorizeOwnedRecordAccess('leads.view_all', $lead->assigned_to);
 
         abort_if($lead->status === 'converted', 422, 'هذا العميل المحتمل تم تحويله بالفعل');
 

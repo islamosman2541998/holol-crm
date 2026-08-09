@@ -7,7 +7,9 @@ use App\Models\Client;
 use App\Models\Lead;
 use App\Models\Member;
 use App\Models\Task;
+use App\Models\TaskAttachment;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use App\Models\Project;
 
 class TaskController extends Controller
@@ -89,6 +91,17 @@ class TaskController extends Controller
             ->route('admin.tasks.index')
             ->with('success', 'تم إضافة المهمة بنجاح');
     }
+    public function downloadAttachment(Task $task, TaskAttachment $attachment)
+    {
+        $this->authorizeTaskAccess($task);
+
+        abort_unless((int) $attachment->task_id === (int) $task->id, 404);
+
+        abort_unless(Storage::disk('local')->exists($attachment->file_path), 404);
+
+        return Storage::disk('local')->download($attachment->file_path, $attachment->file_name);
+    }
+
     private function authorizeTaskAccess(Task $task): void
     {
         $user = auth()->user();

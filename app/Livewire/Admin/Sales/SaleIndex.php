@@ -4,12 +4,13 @@ namespace App\Livewire\Admin\Sales;
 
 use App\Models\Sale;
 use App\Models\User;
+use App\Traits\AuthorizesOwnedRecords;
 use Livewire\Component;
 use Livewire\WithPagination;
 
 class SaleIndex extends Component
 {
-    use WithPagination;
+    use WithPagination, AuthorizesOwnedRecords;
 
     public string $search = '';
     public string $status = '';
@@ -46,7 +47,11 @@ class SaleIndex extends Component
     public function render()
     {
         $sales = Sale::query()
-            ->with(['client', 'user', 'items.service'])
+            ->with(['client', 'user', 'items.service']);
+
+        $this->applyOwnedRecordScope($sales, 'sales.view_all', 'user_id');
+
+        $sales = $sales
             ->when($this->search, function ($query) {
                 $query->whereHas('client', function ($query) {
                     $query->where('name', 'like', '%' . $this->search . '%')

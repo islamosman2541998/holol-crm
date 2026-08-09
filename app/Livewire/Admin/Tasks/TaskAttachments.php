@@ -29,17 +29,18 @@ class TaskAttachments extends Component
         $this->authorizeTaskAccess();
 
         $data = $this->validate([
-            'file' => ['required', 'file', 'max:5120'],
+            'file' => ['required', 'file', 'max:5120', 'mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,csv,txt,jpg,jpeg,png,gif,webp,zip,rar'],
             'notes' => ['nullable', 'string'],
         ], [
             'file.required' => 'الملف مطلوب',
             'file.file' => 'يجب اختيار ملف صحيح',
             'file.max' => 'حجم الملف لا يزيد عن 5MB',
+            'file.mimes' => 'نوع الملف غير مسموح به',
         ]);
 
         $uploadedFile = $data['file'];
 
-        $path = $uploadedFile->store('tasks/attachments', 'public');
+        $path = $uploadedFile->store('tasks/attachments', 'local');
 
         $attachment = TaskAttachment::query()->create([
             'task_id' => $this->task->id,
@@ -90,7 +91,7 @@ class TaskAttachments extends Component
             ]
         );
 
-        Storage::disk('public')->delete($attachment->file_path);
+        Storage::disk('local')->delete($attachment->file_path);
 
         $attachment->delete();
 

@@ -8,12 +8,15 @@ use App\Models\Payment;
 use App\Models\Quotation;
 use App\Models\Sale;
 use App\Models\Service;
+use App\Traits\AuthorizesOwnedRecords;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class SaleController extends Controller
 {
+    use AuthorizesOwnedRecords;
+
     public function index()
     {
         return view('admin.sales.index');
@@ -21,6 +24,8 @@ class SaleController extends Controller
 
     public function show(Sale $sale)
     {
+        $this->authorizeOwnedRecordAccess('sales.view_all', $sale->user_id);
+
         $sale->load([
             'client',
             'quotation',
@@ -125,6 +130,8 @@ class SaleController extends Controller
 
     public function edit(Sale $sale)
     {
+        $this->authorizeOwnedRecordAccess('sales.view_all', $sale->user_id);
+
         $sale->load([
             'items.service',
             'quotation.items.service',
@@ -165,6 +172,8 @@ class SaleController extends Controller
 
     public function update(Request $request, Sale $sale)
     {
+        $this->authorizeOwnedRecordAccess('sales.view_all', $sale->user_id);
+
         $data = $this->validateSale($request, $sale);
 
         DB::transaction(function () use ($sale, $data) {
@@ -214,6 +223,8 @@ class SaleController extends Controller
 
     public function destroy(Sale $sale)
     {
+        $this->authorizeOwnedRecordAccess('sales.view_all', $sale->user_id);
+
         $sale->delete();
 
         return redirect()
