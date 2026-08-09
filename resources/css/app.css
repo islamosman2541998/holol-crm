@@ -17,11 +17,51 @@
 
     --button-radius: 8px;
     --card-radius: 14px;
+
+    --page-bg: #f5f6fa;
+    --surface-bg: #ffffff;
+    --surface-border: #edf0f3;
+    --text-strong: #111827;
+    --text-muted: #6b7280;
+}
+
+html[data-bs-theme="dark"] {
+    --page-bg: #0f1420;
+    --surface-bg: #161c2b;
+    --surface-border: #262f42;
+    --text-strong: #e8ebf1;
+    --text-muted: #9aa4b8;
+
+    --topbar-bg: #161c2b;
 }
 
 body {
     font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    background-color: #f5f6fa;
+    background-color: var(--page-bg);
+}
+
+/* Bootstrap's .bg-white/.text-dark/.btn-outline-dark utilities are fixed, not
+   theme-aware; the app uses them for card headers, emphasis text and the "view"
+   row action, so retarget them in dark mode. */
+html[data-bs-theme="dark"] .bg-white {
+    background-color: var(--surface-bg) !important;
+}
+
+html[data-bs-theme="dark"] .text-dark {
+    color: var(--text-strong) !important;
+}
+
+html[data-bs-theme="dark"] .btn-outline-dark {
+    color: var(--text-strong);
+    border-color: var(--text-strong);
+}
+
+html[data-bs-theme="dark"] .btn-outline-dark:hover,
+html[data-bs-theme="dark"] .btn-outline-dark:focus,
+html[data-bs-theme="dark"] .btn-outline-dark:active {
+    color: var(--page-bg);
+    background-color: var(--text-strong);
+    border-color: var(--text-strong);
 }
 
 .btn {
@@ -72,7 +112,7 @@ body {
 
 .admin-wrapper {
     min-height: 100vh;
-    background: #f5f6fa;
+    background: var(--page-bg);
 }
 
 /* Sidebar fixed */
@@ -179,7 +219,7 @@ body {
     background-color: color-mix(in srgb, var(--topbar-bg) 92%, transparent);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(17, 24, 39, 0.06);
+    border-bottom: 1px solid var(--surface-border);
     box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04);
     padding: 14px 28px;
     display: flex;
@@ -190,7 +230,7 @@ body {
 .topbar-heading h5 {
     font-weight: 700;
     letter-spacing: -0.01em;
-    color: #111827;
+    color: var(--text-strong);
 }
 
 .topbar-heading small {
@@ -212,8 +252,8 @@ body {
     align-items: center;
     gap: 10px;
 
-    border: 1px solid rgba(17, 24, 39, 0.08);
-    background: rgba(17, 24, 39, 0.02);
+    border: 1px solid var(--surface-border);
+    background: color-mix(in srgb, var(--text-strong) 3%, transparent);
     padding: 6px 10px 6px 12px;
     border-radius: 999px;
 
@@ -225,8 +265,8 @@ body {
 
 .user-chip:hover,
 .user-chip:focus-visible {
-    background: rgba(17, 24, 39, 0.05);
-    border-color: rgba(17, 24, 39, 0.14);
+    background: color-mix(in srgb, var(--text-strong) 6%, transparent);
+    border-color: color-mix(in srgb, var(--text-strong) 16%, transparent);
 }
 
 .user-chip:focus-visible {
@@ -238,7 +278,34 @@ body {
     font-size: 13.5px;
     font-weight: 600;
     line-height: 1.3;
-    color: #111827;
+    color: var(--text-strong);
+}
+
+.theme-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid var(--surface-border);
+    background: color-mix(in srgb, var(--text-strong) 3%, transparent);
+    color: var(--text-strong);
+    font-size: 16px;
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.theme-toggle-btn:hover {
+    background: color-mix(in srgb, var(--text-strong) 6%, transparent);
+    border-color: color-mix(in srgb, var(--text-strong) 16%, transparent);
+    color: var(--text-strong);
+}
+
+.theme-toggle-btn:active {
+    transform: scale(0.92);
 }
 
 .user-role-badge {
@@ -286,7 +353,7 @@ body {
     min-width: 260px;
     padding: 10px;
     margin-top: 12px !important;
-    border: 1px solid rgba(17, 24, 39, 0.06);
+    border: 1px solid var(--surface-border);
     border-radius: var(--card-radius);
     box-shadow: 0 18px 40px rgba(15, 23, 42, 0.14);
 }
@@ -330,7 +397,7 @@ body {
 }
 
 .stat-title {
-    color: #6b7280;
+    color: var(--text-muted);
     font-size: 14px;
 }
 
@@ -387,19 +454,19 @@ body {
     width: 120px;
     height: 80px;
     object-fit: contain;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--surface-border);
     border-radius: 12px;
     padding: 8px;
-    background-color: #fff;
+    background-color: var(--surface-bg);
 }
 
 .settings-preview-wide {
     width: 220px;
     height: 120px;
     object-fit: cover;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--surface-border);
     border-radius: 12px;
-    background-color: #fff;
+    background-color: var(--surface-bg);
 }
 
 #toast-container {
@@ -447,7 +514,7 @@ body {
     justify-content: space-between;
     gap: 16px;
     padding: 12px 0;
-    border-bottom: 1px solid #edf0f3;
+    border-bottom: 1px solid var(--surface-border);
 }
 
 .client-info-item:last-child {
@@ -455,22 +522,22 @@ body {
 }
 
 .client-info-item span {
-    color: black;
+    color: var(--text-strong);
     font-size: 14px;
 }
 
 .client-info-item strong {
-    color: #111827;
+    color: var(--text-strong);
     font-size: 14px;
     text-align: left;
 }
 
 .followup-item {
     padding: 16px;
-    border: 1px solid #edf0f3;
+    border: 1px solid var(--surface-border);
     border-radius: 16px;
     margin-bottom: 12px;
-    background-color: #fff;
+    background-color: var(--surface-bg);
 }
 
 .followup-item:last-child {
@@ -483,7 +550,7 @@ body {
     justify-content: space-between;
     gap: 16px;
     padding: 14px 0;
-    border-bottom: 1px solid #edf0f3;
+    border-bottom: 1px solid var(--surface-border);
 }
 
 .dashboard-list-item:last-child {
@@ -496,10 +563,10 @@ body {
 
 .lead-followup-item {
     padding: 16px;
-    border: 1px solid #edf0f3;
+    border: 1px solid var(--surface-border);
     border-radius: 16px;
     margin-bottom: 12px;
-    background-color: #fff;
+    background-color: var(--surface-bg);
 }
 
 .lead-followup-item:last-child {
@@ -510,7 +577,7 @@ body {
     display: flex;
     gap: 14px;
     padding: 16px 0;
-    border-bottom: 1px solid #edf0f3;
+    border-bottom: 1px solid var(--surface-border);
 }
 
 .activity-log-item:last-child {
@@ -521,7 +588,7 @@ body {
     width: 38px;
     height: 38px;
     border-radius: 12px;
-    background-color: #f3f4f6;
+    background-color: color-mix(in srgb, var(--text-strong) 6%, transparent);
     color: var(--primary-color);
     display: flex;
     align-items: center;
@@ -534,9 +601,9 @@ body {
 }
 
 .permission-group-box {
-    border: 1px solid #edf0f3;
+    border: 1px solid var(--surface-border);
     border-radius: 16px;
-    background-color: #fff;
+    background-color: var(--surface-bg);
     padding: 16px;
     height: 100%;
 }
@@ -547,7 +614,7 @@ body {
 
 .related-task-item {
     padding: 16px 0;
-    border-bottom: 1px solid #edf0f3;
+    border-bottom: 1px solid var(--surface-border);
 }
 
 .related-task-item:last-child {
@@ -556,7 +623,7 @@ body {
 
 .task-comment-item {
     padding: 16px 0;
-    border-bottom: 1px solid #edf0f3;
+    border-bottom: 1px solid var(--surface-border);
 }
 
 .task-comment-item:last-child {
@@ -568,7 +635,7 @@ body {
     justify-content: space-between;
     gap: 16px;
     padding: 14px 0;
-    border-bottom: 1px solid #edf0f3;
+    border-bottom: 1px solid var(--surface-border);
 }
 
 .dashboard-list-item:last-child {
@@ -580,7 +647,7 @@ body {
 }
 .related-project-item {
     padding: 16px 0;
-    border-bottom: 1px solid #edf0f3;
+    border-bottom: 1px solid var(--surface-border);
 }
 
 .related-project-item:last-child {
@@ -591,7 +658,7 @@ body {
     justify-content: space-between;
     gap: 16px;
     padding: 14px 0;
-    border-bottom: 1px solid #edf0f3;
+    border-bottom: 1px solid var(--surface-border);
 }
 
 .dashboard-list-item:last-child {
@@ -603,7 +670,7 @@ body {
 }
 .project-comment-item {
     padding: 16px 0;
-    border-bottom: 1px solid #edf0f3;
+    border-bottom: 1px solid var(--surface-border);
 }
 
 .project-comment-item:last-child {
@@ -611,7 +678,7 @@ body {
 }
 .project-milestone-item {
     padding: 16px 0;
-    border-bottom: 1px solid #edf0f3;
+    border-bottom: 1px solid var(--surface-border);
 }
 
 .project-milestone-item:last-child {

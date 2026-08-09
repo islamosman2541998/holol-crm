@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Member;
 use App\Models\Team;
 use App\Models\User;
+use App\Traits\RestrictsPermissionGrants;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -14,6 +15,8 @@ use Illuminate\Validation\Rule;
 
 class MemberController extends Controller
 {
+    use RestrictsPermissionGrants;
+
     public function index()
     {
         return view('admin.members.index');
@@ -49,6 +52,9 @@ class MemberController extends Controller
     public function store(Request $request)
     {
         $data = $this->validateMember($request);
+
+        $this->guardTeamAssignment($data['team_id'] ?? null);
+
         if (! empty($data['user_id'])) {
             $this->fillMemberDataFromLinkedUser($data);
         }
@@ -177,6 +183,9 @@ class MemberController extends Controller
     public function update(Request $request, Member $member)
     {
         $data = $this->validateMember($request, $member);
+
+        $this->guardTeamAssignment($data['team_id'] ?? null);
+
         if (! empty($data['user_id'])) {
             $this->fillMemberDataFromLinkedUser($data);
         }

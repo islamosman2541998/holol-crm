@@ -4,10 +4,13 @@ namespace App\Livewire\Admin\Clients;
 
 use App\Models\Client;
 use App\Models\ClientFollowup;
+use App\Traits\AuthorizesOwnedRecords;
 use Livewire\Component;
 
 class ClientFollowups extends Component
 {
+    use AuthorizesOwnedRecords;
+
     public Client $client;
 
     public string $note = '';
@@ -22,6 +25,8 @@ class ClientFollowups extends Component
     public function save(): void
     {
         abort_unless(auth()->user()->can('followups.create'), 403);
+
+        $this->authorizeOwnedRecordAccess('clients.view_all', $this->client->assigned_to);
 
         $data = $this->validate([
             'note' => ['required', 'string', 'min:3'],
@@ -69,6 +74,8 @@ class ClientFollowups extends Component
     {
         abort_unless(auth()->user()->can('followups.edit'), 403);
 
+        $this->authorizeOwnedRecordAccess('clients.view_all', $this->client->assigned_to);
+
         $followup = ClientFollowup::query()
             ->where('client_id', $this->client->id)
             ->findOrFail($followupId);
@@ -100,6 +107,8 @@ class ClientFollowups extends Component
     public function delete(int $followupId): void
     {
         abort_unless(auth()->user()->can('followups.delete'), 403);
+
+        $this->authorizeOwnedRecordAccess('clients.view_all', $this->client->assigned_to);
 
         $followup = ClientFollowup::query()
             ->where('client_id', $this->client->id)

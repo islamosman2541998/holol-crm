@@ -11,350 +11,370 @@
     @endphp
 
     <div class="row g-4 mb-4">
-        <div class="col-12 col-md-6 col-xl-3">
-            <a href="{{ route('admin.reports.clients') }}"
-               class="stat-card card border-0 shadow-sm stat-card-link">
-                <div class="card-body">
-                    <div class="stat-icon bg-primary-subtle text-primary">
-                        <i class="bi bi-people"></i>
+        @can('clients.view')
+            <div class="col-12 col-md-6 col-xl-3">
+                <a href="{{ route('admin.reports.clients') }}"
+                   class="stat-card card border-0 shadow-sm stat-card-link">
+                    <div class="card-body">
+                        <div class="stat-icon bg-primary-subtle text-primary">
+                            <i class="bi bi-people"></i>
+                        </div>
+                        <div class="stat-title">إجمالي العملاء</div>
+                        <div class="stat-value">{{ $clientsCount }}</div>
                     </div>
-                    <div class="stat-title">إجمالي العملاء</div>
-                    <div class="stat-value">{{ $clientsCount }}</div>
-                </div>
-            </a>
-        </div>
+                </a>
+            </div>
 
-        <div class="col-12 col-md-6 col-xl-3">
-            <a href="{{ route('admin.reports.clients', ['status' => 'new']) }}"
-               class="stat-card card border-0 shadow-sm stat-card-link">
-                <div class="card-body">
-                    <div class="stat-icon bg-info-subtle text-info">
-                        <i class="bi bi-person-plus"></i>
+            <div class="col-12 col-md-6 col-xl-3">
+                <a href="{{ route('admin.reports.clients', ['status' => 'new']) }}"
+                   class="stat-card card border-0 shadow-sm stat-card-link">
+                    <div class="card-body">
+                        <div class="stat-icon bg-info-subtle text-info">
+                            <i class="bi bi-person-plus"></i>
+                        </div>
+                        <div class="stat-title">عملاء جدد</div>
+                        <div class="stat-value">{{ $newClientsCount }}</div>
                     </div>
-                    <div class="stat-title">عملاء جدد</div>
-                    <div class="stat-value">{{ $newClientsCount }}</div>
-                </div>
-            </a>
-        </div>
+                </a>
+            </div>
+        @endcan
 
-        <div class="col-12 col-md-6 col-xl-3">
-            <a href="{{ route('admin.reports.clients', ['followupState' => 'today']) }}"
-               class="stat-card card border-0 shadow-sm stat-card-link">
-                <div class="card-body">
-                    <div class="stat-icon bg-warning-subtle text-warning">
-                        <i class="bi bi-calendar-event"></i>
+        @can('followups.view')
+            <div class="col-12 col-md-6 col-xl-3">
+                <a href="{{ route('admin.reports.clients', ['followupState' => 'today']) }}"
+                   class="stat-card card border-0 shadow-sm stat-card-link">
+                    <div class="card-body">
+                        <div class="stat-icon bg-warning-subtle text-warning">
+                            <i class="bi bi-calendar-event"></i>
+                        </div>
+                        <div class="stat-title">متابعات اليوم</div>
+                        <div class="stat-value">{{ $todayFollowupsCount }}</div>
                     </div>
-                    <div class="stat-title">متابعات اليوم</div>
-                    <div class="stat-value">{{ $todayFollowupsCount }}</div>
-                </div>
-            </a>
-        </div>
+                </a>
+            </div>
 
-        <div class="col-12 col-md-6 col-xl-3">
-            <a href="{{ route('admin.reports.clients', ['followupState' => 'overdue']) }}"
-               class="stat-card card border-0 shadow-sm stat-card-link">
-                <div class="card-body">
-                    <div class="stat-icon bg-danger-subtle text-danger">
-                        <i class="bi bi-exclamation-triangle"></i>
+            <div class="col-12 col-md-6 col-xl-3">
+                <a href="{{ route('admin.reports.clients', ['followupState' => 'overdue']) }}"
+                   class="stat-card card border-0 shadow-sm stat-card-link">
+                    <div class="card-body">
+                        <div class="stat-icon bg-danger-subtle text-danger">
+                            <i class="bi bi-exclamation-triangle"></i>
+                        </div>
+                        <div class="stat-title">متابعات متأخرة</div>
+                        <div class="stat-value">{{ $overdueFollowupsCount }}</div>
                     </div>
-                    <div class="stat-title">متابعات متأخرة</div>
-                    <div class="stat-value">{{ $overdueFollowupsCount }}</div>
-                </div>
-            </a>
-        </div>
+                </a>
+            </div>
+        @endcan
     </div>
 
     <div class="row g-4 mb-4">
-        <div class="col-12 col-md-6 col-xl-3">
-            <a href="{{ route('admin.reports.sales-payments') }}"
-               class="stat-card card border-0 shadow-sm stat-card-link">
-                <div class="card-body">
-                    <div class="stat-icon bg-success-subtle text-success">
-                        <i class="bi bi-cash-coin"></i>
+        @can('sales.view')
+            <div class="col-12 col-md-6 col-xl-3">
+                <a href="{{ route('admin.reports.sales-payments') }}"
+                   class="stat-card card border-0 shadow-sm stat-card-link">
+                    <div class="card-body">
+                        <div class="stat-icon bg-success-subtle text-success">
+                            <i class="bi bi-cash-coin"></i>
+                        </div>
+                        <div class="stat-title">إجمالي المبيعات</div>
+                        <div class="stat-value fs-4">{{ number_format($salesTotal, 2) }}</div>
                     </div>
-                    <div class="stat-title">إجمالي المبيعات</div>
-                    <div class="stat-value fs-4">{{ number_format($salesTotal, 2) }}</div>
-                </div>
-            </a>
-        </div>
+                </a>
+            </div>
+        @endcan
 
-        <div class="col-12 col-md-6 col-xl-3">
-            <a href="{{ route('admin.reports.sales-payments') }}"
-               class="stat-card card border-0 shadow-sm stat-card-link">
-                <div class="card-body">
-                    <div class="stat-icon bg-success-subtle text-success">
-                        <i class="bi bi-wallet2"></i>
+        @can('payments.view')
+            <div class="col-12 col-md-6 col-xl-3">
+                <a href="{{ route('admin.reports.sales-payments') }}"
+                   class="stat-card card border-0 shadow-sm stat-card-link">
+                    <div class="card-body">
+                        <div class="stat-icon bg-success-subtle text-success">
+                            <i class="bi bi-wallet2"></i>
+                        </div>
+                        <div class="stat-title">إجمالي المدفوع</div>
+                        <div class="stat-value fs-4">{{ number_format($paymentsTotal, 2) }}</div>
                     </div>
-                    <div class="stat-title">إجمالي المدفوع</div>
-                    <div class="stat-value fs-4">{{ number_format($paymentsTotal, 2) }}</div>
-                </div>
-            </a>
-        </div>
+                </a>
+            </div>
 
-        <div class="col-12 col-md-6 col-xl-3">
-            <a href="{{ route('admin.reports.sales-payments', ['balanceState' => 'has_remaining']) }}"
-               class="stat-card card border-0 shadow-sm stat-card-link">
-                <div class="card-body">
-                    <div class="stat-icon bg-danger-subtle text-danger">
-                        <i class="bi bi-hourglass-bottom"></i>
+            <div class="col-12 col-md-6 col-xl-3">
+                <a href="{{ route('admin.reports.sales-payments', ['balanceState' => 'has_remaining']) }}"
+                   class="stat-card card border-0 shadow-sm stat-card-link">
+                    <div class="card-body">
+                        <div class="stat-icon bg-danger-subtle text-danger">
+                            <i class="bi bi-hourglass-bottom"></i>
+                        </div>
+                        <div class="stat-title">إجمالي المتبقي</div>
+                        <div class="stat-value fs-4">{{ number_format($remainingTotal, 2) }}</div>
                     </div>
-                    <div class="stat-title">إجمالي المتبقي</div>
-                    <div class="stat-value fs-4">{{ number_format($remainingTotal, 2) }}</div>
-                </div>
-            </a>
-        </div>
+                </a>
+            </div>
+        @endcan
 
-        <div class="col-12 col-md-6 col-xl-3">
-            <a href="{{ route('admin.reports.sales-payments', [
-                    'soldFrom' => $monthStart,
-                    'soldTo' => $monthEnd,
-                ]) }}"
-               class="stat-card card border-0 shadow-sm stat-card-link">
-                <div class="card-body">
-                    <div class="stat-icon bg-primary-subtle text-primary">
-                        <i class="bi bi-calendar-month"></i>
+        @can('sales.view')
+            <div class="col-12 col-md-6 col-xl-3">
+                <a href="{{ route('admin.reports.sales-payments', [
+                        'soldFrom' => $monthStart,
+                        'soldTo' => $monthEnd,
+                    ]) }}"
+                   class="stat-card card border-0 shadow-sm stat-card-link">
+                    <div class="card-body">
+                        <div class="stat-icon bg-primary-subtle text-primary">
+                            <i class="bi bi-calendar-month"></i>
+                        </div>
+                        <div class="stat-title">مبيعات الشهر</div>
+                        <div class="stat-value fs-4">{{ number_format($monthlySalesTotal, 2) }}</div>
                     </div>
-                    <div class="stat-title">مبيعات الشهر</div>
-                    <div class="stat-value fs-4">{{ number_format($monthlySalesTotal, 2) }}</div>
-                </div>
-            </a>
-        </div>
+                </a>
+            </div>
+        @endcan
     </div>
+
+    @can('leads.view')
+        <div class="row g-4 mb-4">
+            <div class="col-12 col-md-6 col-xl-3">
+                <a href="{{ route('admin.reports.leads') }}"
+                   class="stat-card card border-0 shadow-sm stat-card-link">
+                    <div class="card-body">
+                        <div class="stat-icon bg-primary-subtle text-primary">
+                            <i class="bi bi-person-lines-fill"></i>
+                        </div>
+                        <div class="stat-title">إجمالي Leads</div>
+                        <div class="stat-value">{{ $leadsCount }}</div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+                <a href="{{ route('admin.reports.leads', ['status' => 'new']) }}"
+                   class="stat-card card border-0 shadow-sm stat-card-link">
+                    <div class="card-body">
+                        <div class="stat-icon bg-info-subtle text-info">
+                            <i class="bi bi-person-plus"></i>
+                        </div>
+                        <div class="stat-title">Leads جديدة</div>
+                        <div class="stat-value">{{ $newLeadsCount }}</div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+                <a href="{{ route('admin.reports.leads', ['status' => 'qualified']) }}"
+                   class="stat-card card border-0 shadow-sm stat-card-link">
+                    <div class="card-body">
+                        <div class="stat-icon bg-success-subtle text-success">
+                            <i class="bi bi-check2-circle"></i>
+                        </div>
+                        <div class="stat-title">Leads مؤهلة</div>
+                        <div class="stat-value">{{ $qualifiedLeadsCount }}</div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+                <a href="{{ route('admin.reports.leads', ['conversionState' => 'converted']) }}"
+                   class="stat-card card border-0 shadow-sm stat-card-link">
+                    <div class="card-body">
+                        <div class="stat-icon bg-success-subtle text-success">
+                            <i class="bi bi-arrow-repeat"></i>
+                        </div>
+                        <div class="stat-title">تم تحويلها</div>
+                        <div class="stat-value">{{ $convertedLeadsCount }}</div>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-12 col-md-6 col-xl-4">
+                <a href="{{ route('admin.reports.leads', ['followupState' => 'today']) }}"
+                   class="stat-card card border-0 shadow-sm stat-card-link">
+                    <div class="card-body">
+                        <div class="stat-icon bg-warning-subtle text-warning">
+                            <i class="bi bi-chat-left-dots"></i>
+                        </div>
+                        <div class="stat-title">متابعات Leads اليوم</div>
+                        <div class="stat-value">{{ $todayLeadFollowupsCount }}</div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-4">
+                <a href="{{ route('admin.reports.leads', ['followupState' => 'overdue']) }}"
+                   class="stat-card card border-0 shadow-sm stat-card-link">
+                    <div class="card-body">
+                        <div class="stat-icon bg-danger-subtle text-danger">
+                            <i class="bi bi-exclamation-triangle"></i>
+                        </div>
+                        <div class="stat-title">متابعات Leads متأخرة</div>
+                        <div class="stat-value">{{ $overdueLeadFollowupsCount }}</div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-4">
+                <a href="{{ route('admin.reports.leads', ['followupState' => 'pending']) }}"
+                   class="stat-card card border-0 shadow-sm stat-card-link">
+                    <div class="card-body">
+                        <div class="stat-icon bg-info-subtle text-info">
+                            <i class="bi bi-hourglass-split"></i>
+                        </div>
+                        <div class="stat-title">متابعات Leads قيد التنفيذ</div>
+                        <div class="stat-value">{{ $pendingLeadFollowupsCount }}</div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    @endcan
 
     <div class="row g-4 mb-4">
-        <div class="col-12 col-md-6 col-xl-3">
-            <a href="{{ route('admin.reports.leads') }}"
-               class="stat-card card border-0 shadow-sm stat-card-link">
-                <div class="card-body">
-                    <div class="stat-icon bg-primary-subtle text-primary">
-                        <i class="bi bi-person-lines-fill"></i>
+        @can('clients.view')
+            <div class="col-12 col-md-6 col-xl-3">
+                <a href="{{ route('admin.reports.clients', ['status' => 'active']) }}"
+                   class="small-stat-card card border-0 shadow-sm stat-card-link">
+                    <div class="card-body d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-muted small">عملاء نشطين</div>
+                            <div class="fw-bold fs-4">{{ $activeClientsCount }}</div>
+                        </div>
+                        <i class="bi bi-check-circle text-success fs-3"></i>
                     </div>
-                    <div class="stat-title">إجمالي Leads</div>
-                    <div class="stat-value">{{ $leadsCount }}</div>
-                </div>
-            </a>
-        </div>
+                </a>
+            </div>
+        @endcan
 
-        <div class="col-12 col-md-6 col-xl-3">
-            <a href="{{ route('admin.reports.leads', ['status' => 'new']) }}"
-               class="stat-card card border-0 shadow-sm stat-card-link">
-                <div class="card-body">
-                    <div class="stat-icon bg-info-subtle text-info">
-                        <i class="bi bi-person-plus"></i>
+        @can('followups.view')
+            <div class="col-12 col-md-6 col-xl-3">
+                <a href="{{ route('admin.reports.clients', ['followupState' => 'pending']) }}"
+                   class="small-stat-card card border-0 shadow-sm stat-card-link">
+                    <div class="card-body d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-muted small">متابعات قيد التنفيذ</div>
+                            <div class="fw-bold fs-4">{{ $pendingFollowupsCount }}</div>
+                        </div>
+                        <i class="bi bi-hourglass-split text-warning fs-3"></i>
                     </div>
-                    <div class="stat-title">Leads جديدة</div>
-                    <div class="stat-value">{{ $newLeadsCount }}</div>
-                </div>
-            </a>
-        </div>
-
-        <div class="col-12 col-md-6 col-xl-3">
-            <a href="{{ route('admin.reports.leads', ['status' => 'qualified']) }}"
-               class="stat-card card border-0 shadow-sm stat-card-link">
-                <div class="card-body">
-                    <div class="stat-icon bg-success-subtle text-success">
-                        <i class="bi bi-check2-circle"></i>
-                    </div>
-                    <div class="stat-title">Leads مؤهلة</div>
-                    <div class="stat-value">{{ $qualifiedLeadsCount }}</div>
-                </div>
-            </a>
-        </div>
-
-        <div class="col-12 col-md-6 col-xl-3">
-            <a href="{{ route('admin.reports.leads', ['conversionState' => 'converted']) }}"
-               class="stat-card card border-0 shadow-sm stat-card-link">
-                <div class="card-body">
-                    <div class="stat-icon bg-success-subtle text-success">
-                        <i class="bi bi-arrow-repeat"></i>
-                    </div>
-                    <div class="stat-title">تم تحويلها</div>
-                    <div class="stat-value">{{ $convertedLeadsCount }}</div>
-                </div>
-            </a>
-        </div>
+                </a>
+            </div>
+        @endcan
     </div>
 
-    <div class="row g-4 mb-4">
-        <div class="col-12 col-md-6 col-xl-4">
-            <a href="{{ route('admin.reports.leads', ['followupState' => 'today']) }}"
-               class="stat-card card border-0 shadow-sm stat-card-link">
-                <div class="card-body">
-                    <div class="stat-icon bg-warning-subtle text-warning">
-                        <i class="bi bi-chat-left-dots"></i>
+    @can('tasks.view')
+        <div class="row g-4 mb-4">
+            <div class="col-md-3">
+                <a href="{{ route('admin.tasks.index', ['dateFilter' => 'today']) }}"
+                   class="card border-0 shadow-sm small-stat-card stat-card-link">
+                    <div class="card-body">
+                        <div class="text-muted small mb-1">مهام اليوم</div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h4 class="mb-0">{{ $todayTasksCount ?? 0 }}</h4>
+                            <i class="bi bi-calendar-check fs-3 text-primary"></i>
+                        </div>
                     </div>
-                    <div class="stat-title">متابعات Leads اليوم</div>
-                    <div class="stat-value">{{ $todayLeadFollowupsCount }}</div>
-                </div>
-            </a>
-        </div>
+                </a>
+            </div>
 
-        <div class="col-12 col-md-6 col-xl-4">
-            <a href="{{ route('admin.reports.leads', ['followupState' => 'overdue']) }}"
-               class="stat-card card border-0 shadow-sm stat-card-link">
-                <div class="card-body">
-                    <div class="stat-icon bg-danger-subtle text-danger">
-                        <i class="bi bi-exclamation-triangle"></i>
+            <div class="col-md-3">
+                <a href="{{ route('admin.tasks.index', ['dateFilter' => 'overdue']) }}"
+                   class="card border-0 shadow-sm small-stat-card stat-card-link">
+                    <div class="card-body">
+                        <div class="text-muted small mb-1">مهام متأخرة</div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h4 class="mb-0">{{ $overdueTasksCount ?? 0 }}</h4>
+                            <i class="bi bi-exclamation-triangle fs-3 text-danger"></i>
+                        </div>
                     </div>
-                    <div class="stat-title">متابعات Leads متأخرة</div>
-                    <div class="stat-value">{{ $overdueLeadFollowupsCount }}</div>
-                </div>
-            </a>
-        </div>
+                </a>
+            </div>
 
-        <div class="col-12 col-md-6 col-xl-4">
-            <a href="{{ route('admin.reports.leads', ['followupState' => 'pending']) }}"
-               class="stat-card card border-0 shadow-sm stat-card-link">
-                <div class="card-body">
-                    <div class="stat-icon bg-info-subtle text-info">
-                        <i class="bi bi-hourglass-split"></i>
+            <div class="col-md-3">
+                <a href="{{ route('admin.tasks.index', ['status' => 'in_progress']) }}"
+                   class="card border-0 shadow-sm small-stat-card stat-card-link">
+                    <div class="card-body">
+                        <div class="text-muted small mb-1">قيد التنفيذ</div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h4 class="mb-0">{{ $inProgressTasksCount ?? 0 }}</h4>
+                            <i class="bi bi-hourglass-split fs-3 text-info"></i>
+                        </div>
                     </div>
-                    <div class="stat-title">متابعات Leads قيد التنفيذ</div>
-                    <div class="stat-value">{{ $pendingLeadFollowupsCount }}</div>
-                </div>
-            </a>
-        </div>
-    </div>
+                </a>
+            </div>
 
-    <div class="row g-4 mb-4">
-        <div class="col-12 col-md-6 col-xl-3">
-            <a href="{{ route('admin.reports.clients', ['status' => 'active']) }}"
-               class="small-stat-card card border-0 shadow-sm stat-card-link">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="text-muted small">عملاء نشطين</div>
-                        <div class="fw-bold fs-4">{{ $activeClientsCount }}</div>
+            <div class="col-md-3">
+                <a href="{{ route('admin.tasks.index', ['status' => 'review']) }}"
+                   class="card border-0 shadow-sm small-stat-card stat-card-link">
+                    <div class="card-body">
+                        <div class="text-muted small mb-1">في المراجعة</div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h4 class="mb-0">{{ $reviewTasksCount ?? 0 }}</h4>
+                            <i class="bi bi-search fs-3 text-warning"></i>
+                        </div>
                     </div>
-                    <i class="bi bi-check-circle text-success fs-3"></i>
-                </div>
-            </a>
+                </a>
+            </div>
         </div>
+    @endcan
 
-        <div class="col-12 col-md-6 col-xl-3">
-            <a href="{{ route('admin.reports.clients', ['followupState' => 'pending']) }}"
-               class="small-stat-card card border-0 shadow-sm stat-card-link">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="text-muted small">متابعات قيد التنفيذ</div>
-                        <div class="fw-bold fs-4">{{ $pendingFollowupsCount }}</div>
+    @can('projects.view')
+        <div class="row g-4 mb-4">
+            <div class="col-md-3">
+                <a href="{{ route('admin.projects.index', ['statusGroup' => 'active']) }}"
+                   class="card border-0 shadow-sm small-stat-card stat-card-link">
+                    <div class="card-body">
+                        <div class="text-muted small mb-1">مشاريع نشطة</div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h4 class="mb-0">{{ $activeProjectsCount ?? 0 }}</h4>
+                            <i class="bi bi-kanban fs-3 text-primary"></i>
+                        </div>
                     </div>
-                    <i class="bi bi-hourglass-split text-warning fs-3"></i>
-                </div>
-            </a>
-        </div>
-    </div>
+                </a>
+            </div>
 
-    <div class="row g-4 mb-4">
-        <div class="col-md-3">
-            <a href="{{ route('admin.tasks.index', ['dateFilter' => 'today']) }}"
-               class="card border-0 shadow-sm small-stat-card stat-card-link">
-                <div class="card-body">
-                    <div class="text-muted small mb-1">مهام اليوم</div>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h4 class="mb-0">{{ $todayTasksCount ?? 0 }}</h4>
-                        <i class="bi bi-calendar-check fs-3 text-primary"></i>
+            <div class="col-md-3">
+                <a href="{{ route('admin.projects.index', ['status' => 'in_progress']) }}"
+                   class="card border-0 shadow-sm small-stat-card stat-card-link">
+                    <div class="card-body">
+                        <div class="text-muted small mb-1">قيد التنفيذ</div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h4 class="mb-0">{{ $inProgressProjectsCount ?? 0 }}</h4>
+                            <i class="bi bi-hourglass-split fs-3 text-info"></i>
+                        </div>
                     </div>
-                </div>
-            </a>
-        </div>
+                </a>
+            </div>
 
-        <div class="col-md-3">
-            <a href="{{ route('admin.tasks.index', ['dateFilter' => 'overdue']) }}"
-               class="card border-0 shadow-sm small-stat-card stat-card-link">
-                <div class="card-body">
-                    <div class="text-muted small mb-1">مهام متأخرة</div>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h4 class="mb-0">{{ $overdueTasksCount ?? 0 }}</h4>
-                        <i class="bi bi-exclamation-triangle fs-3 text-danger"></i>
+            <div class="col-md-3">
+                <a href="{{ route('admin.projects.index', ['dateFilter' => 'overdue']) }}"
+                   class="card border-0 shadow-sm small-stat-card stat-card-link">
+                    <div class="card-body">
+                        <div class="text-muted small mb-1">مشاريع متأخرة</div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h4 class="mb-0">{{ $overdueProjectsCount ?? 0 }}</h4>
+                            <i class="bi bi-exclamation-triangle fs-3 text-danger"></i>
+                        </div>
                     </div>
-                </div>
-            </a>
-        </div>
+                </a>
+            </div>
 
-        <div class="col-md-3">
-            <a href="{{ route('admin.tasks.index', ['status' => 'in_progress']) }}"
-               class="card border-0 shadow-sm small-stat-card stat-card-link">
-                <div class="card-body">
-                    <div class="text-muted small mb-1">قيد التنفيذ</div>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h4 class="mb-0">{{ $inProgressTasksCount ?? 0 }}</h4>
-                        <i class="bi bi-hourglass-split fs-3 text-info"></i>
+            <div class="col-md-3">
+                <a href="{{ route('admin.projects.index', ['status' => 'completed']) }}"
+                   class="card border-0 shadow-sm small-stat-card stat-card-link">
+                    <div class="card-body">
+                        <div class="text-muted small mb-1">مشاريع مكتملة</div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h4 class="mb-0">{{ $completedProjectsCount ?? 0 }}</h4>
+                            <i class="bi bi-check2-circle fs-3 text-success"></i>
+                        </div>
                     </div>
-                </div>
-            </a>
+                </a>
+            </div>
         </div>
-
-        <div class="col-md-3">
-            <a href="{{ route('admin.tasks.index', ['status' => 'review']) }}"
-               class="card border-0 shadow-sm small-stat-card stat-card-link">
-                <div class="card-body">
-                    <div class="text-muted small mb-1">في المراجعة</div>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h4 class="mb-0">{{ $reviewTasksCount ?? 0 }}</h4>
-                        <i class="bi bi-search fs-3 text-warning"></i>
-                    </div>
-                </div>
-            </a>
-        </div>
-    </div>
-
-    <div class="row g-4 mb-4">
-        <div class="col-md-3">
-            <a href="{{ route('admin.projects.index', ['statusGroup' => 'active']) }}"
-               class="card border-0 shadow-sm small-stat-card stat-card-link">
-                <div class="card-body">
-                    <div class="text-muted small mb-1">مشاريع نشطة</div>
-
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h4 class="mb-0">{{ $activeProjectsCount ?? 0 }}</h4>
-                        <i class="bi bi-kanban fs-3 text-primary"></i>
-                    </div>
-                </div>
-            </a>
-        </div>
-
-        <div class="col-md-3">
-            <a href="{{ route('admin.projects.index', ['status' => 'in_progress']) }}"
-               class="card border-0 shadow-sm small-stat-card stat-card-link">
-                <div class="card-body">
-                    <div class="text-muted small mb-1">قيد التنفيذ</div>
-
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h4 class="mb-0">{{ $inProgressProjectsCount ?? 0 }}</h4>
-                        <i class="bi bi-hourglass-split fs-3 text-info"></i>
-                    </div>
-                </div>
-            </a>
-        </div>
-
-        <div class="col-md-3">
-            <a href="{{ route('admin.projects.index', ['dateFilter' => 'overdue']) }}"
-               class="card border-0 shadow-sm small-stat-card stat-card-link">
-                <div class="card-body">
-                    <div class="text-muted small mb-1">مشاريع متأخرة</div>
-
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h4 class="mb-0">{{ $overdueProjectsCount ?? 0 }}</h4>
-                        <i class="bi bi-exclamation-triangle fs-3 text-danger"></i>
-                    </div>
-                </div>
-            </a>
-        </div>
-
-        <div class="col-md-3">
-            <a href="{{ route('admin.projects.index', ['status' => 'completed']) }}"
-               class="card border-0 shadow-sm small-stat-card stat-card-link">
-                <div class="card-body">
-                    <div class="text-muted small mb-1">مشاريع مكتملة</div>
-
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h4 class="mb-0">{{ $completedProjectsCount ?? 0 }}</h4>
-                        <i class="bi bi-check2-circle fs-3 text-success"></i>
-                    </div>
-                </div>
-            </a>
-        </div>
-    </div>
+    @endcan
 
     <div class="row g-4">
         <div class="col-lg-4">

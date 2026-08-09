@@ -5,6 +5,10 @@
     </div>
 
     <div class="topbar-actions">
+        <button type="button" id="themeToggle" class="theme-toggle-btn" aria-label="تبديل الوضع الداكن">
+            <i class="bi bi-moon-stars"></i>
+        </button>
+
         <div class="dropdown user-dropdown">
             <button type="button" class="user-chip" data-bs-toggle="dropdown" aria-expanded="false">
                 <div class="user-avatar">

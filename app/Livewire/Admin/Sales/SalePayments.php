@@ -4,10 +4,14 @@ namespace App\Livewire\Admin\Sales;
 
 use App\Models\Payment;
 use App\Models\Sale;
+use App\Traits\AuthorizesOwnedRecords;
+use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 
 class SalePayments extends Component
 {
+    use AuthorizesOwnedRecords;
+
     public Sale $sale;
 
     public string $amount = '';
@@ -25,6 +29,14 @@ class SalePayments extends Component
     {
         abort_unless(auth()->user()->can('sales.edit'), 403);
 
+        $this->authorizeOwnedRecordAccess('sales.view_all', $this->sale->user_id);
+
+        if ($this->sale->status === 'cancelled') {
+            throw ValidationException::withMessages([
+                'amount' => 'لا يمكن إضافة دفعة لعملية بيع ملغية.',
+            ]);
+        }
+
         $data = $this->validate([
             'amount' => ['required', 'numeric', 'min:1'],
             'payment_method' => ['required', 'in:cash,bank_transfer,instapay,vodafone_cash,other'],
@@ -36,6 +48,12 @@ class SalePayments extends Component
             'amount.min' => 'قيمة الدفعة يجب أن تكون أكبر من صفر',
             'paid_at.required' => 'تاريخ الدفع مطلوب',
         ]);
+
+        if ((float) $data['amount'] > (float) $this->sale->remaining_amount) {
+            throw ValidationException::withMessages([
+                'amount' => 'مبلغ الدفعة أكبر من المبلغ المتبقي.',
+            ]);
+        }
 
         Payment::query()->create([
             'sale_id' => $this->sale->id,
@@ -62,6 +80,8 @@ class SalePayments extends Component
     public function delete(int $paymentId): void
     {
         abort_unless(auth()->user()->can('sales.edit'), 403);
+
+        $this->authorizeOwnedRecordAccess('sales.view_all', $this->sale->user_id);
 
         $payment = Payment::query()
             ->where('sale_id', $this->sale->id)

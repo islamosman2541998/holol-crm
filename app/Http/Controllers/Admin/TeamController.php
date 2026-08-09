@@ -54,7 +54,9 @@ class TeamController extends Controller
 
         $team->ensureRole();
 
-        $team->syncRolePermissions($this->filterGrantablePermissions($data['permissions'] ?? []));
+        if (auth()->user()->can('teams.permissions')) {
+            $team->syncRolePermissions($this->filterGrantablePermissions($data['permissions'] ?? []));
+        }
 
         $team->syncMembersTeamRole();
 
@@ -159,7 +161,9 @@ class TeamController extends Controller
             $team->ensureRole();
         }
 
-        $team->syncRolePermissions($this->filterGrantablePermissions($data['permissions'] ?? []));
+        if (auth()->user()->can('teams.permissions')) {
+            $team->syncRolePermissions($this->filterGrantablePermissions($data['permissions'] ?? []));
+        }
 
         $team->syncMembersTeamRole();
 

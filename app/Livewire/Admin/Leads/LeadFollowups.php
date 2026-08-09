@@ -4,10 +4,13 @@ namespace App\Livewire\Admin\Leads;
 
 use App\Models\Lead;
 use App\Models\LeadFollowup;
+use App\Traits\AuthorizesOwnedRecords;
 use Livewire\Component;
 
 class LeadFollowups extends Component
 {
+    use AuthorizesOwnedRecords;
+
     public Lead $lead;
 
     public string $type = 'note';
@@ -23,6 +26,8 @@ class LeadFollowups extends Component
     public function save(): void
     {
         abort_unless(auth()->user()->can('leads.edit'), 403);
+
+        $this->authorizeOwnedRecordAccess('leads.view_all', $this->lead->assigned_to);
 
         $data = $this->validate([
             'type' => ['required', 'in:call,whatsapp,meeting,note,email'],
@@ -75,6 +80,8 @@ class LeadFollowups extends Component
     {
         abort_unless(auth()->user()->can('leads.edit'), 403);
 
+        $this->authorizeOwnedRecordAccess('leads.view_all', $this->lead->assigned_to);
+
         $followup = LeadFollowup::query()
             ->where('lead_id', $this->lead->id)
             ->findOrFail($followupId);
@@ -106,6 +113,8 @@ class LeadFollowups extends Component
     public function delete(int $followupId): void
     {
         abort_unless(auth()->user()->can('leads.edit'), 403);
+
+        $this->authorizeOwnedRecordAccess('leads.view_all', $this->lead->assigned_to);
 
         $followup = LeadFollowup::query()
             ->where('lead_id', $this->lead->id)

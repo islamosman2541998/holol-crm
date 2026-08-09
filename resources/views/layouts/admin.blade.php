@@ -6,6 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'لوحة التحكم') | {{ setting('general.system_name', 'Holol CRM') }}</title>
 
+    <script>
+        (function () {
+            var stored = localStorage.getItem('theme');
+            var theme = stored === 'dark' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-bs-theme', theme);
+        })();
+    </script>
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style>
@@ -86,6 +94,32 @@
                 dropdown.classList.toggle('is-open');
             });
         });
+
+        const themeToggle = document.getElementById('themeToggle');
+
+        if (themeToggle) {
+            const themeIcon = themeToggle.querySelector('i');
+
+            const applyIcon = function (theme) {
+                if (!themeIcon) {
+                    return;
+                }
+
+                themeIcon.classList.toggle('bi-moon-stars', theme !== 'dark');
+                themeIcon.classList.toggle('bi-sun', theme === 'dark');
+            };
+
+            applyIcon(document.documentElement.getAttribute('data-bs-theme'));
+
+            themeToggle.addEventListener('click', function () {
+                const html = document.documentElement;
+                const next = html.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
+
+                html.setAttribute('data-bs-theme', next);
+                localStorage.setItem('theme', next);
+                applyIcon(next);
+            });
+        }
     });
 </script>
 </body>
