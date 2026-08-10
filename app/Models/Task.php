@@ -112,6 +112,24 @@ public function project()
             $this->due_at->isPast() &&
             ! in_array($this->status, ['completed', 'cancelled']);
     }
+
+    public function scopeDueToday($query)
+    {
+        return $query->whereDate('due_at', today())
+            ->whereNotIn('status', ['completed', 'cancelled']);
+    }
+
+    public function scopeOverdue($query)
+    {
+        return $query->whereNotNull('due_at')
+            ->where('due_at', '<', now())
+            ->whereNotIn('status', ['completed', 'cancelled']);
+    }
+
+    public function scopeForMember($query, int $memberId)
+    {
+        return $query->where('assigned_member_id', $memberId);
+    }
     public function comments()
 {
     return $this->hasMany(TaskComment::class)->latest();

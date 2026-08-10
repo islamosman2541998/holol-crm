@@ -9,6 +9,8 @@
             <i class="bi bi-moon-stars"></i>
         </button>
 
+        <livewire:admin.shared.notification-bell />
+
         <div class="dropdown user-dropdown">
             <button type="button" class="user-chip" data-bs-toggle="dropdown" aria-expanded="false">
                 <div class="user-avatar">

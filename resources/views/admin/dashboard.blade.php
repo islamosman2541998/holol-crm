@@ -774,4 +774,67 @@
             </div>
         </div>
     </div>
+
+    @if ($showTasksPopup)
+        <div class="modal fade" id="tasksPopupModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="bi bi-bell text-primary"></i>
+                            مهامك اليوم
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+                    </div>
+
+                    <div class="modal-body">
+                        @if ($popupOverdueTasks->isNotEmpty())
+                            <div class="mb-3">
+                                <span class="badge bg-danger mb-2">مهام متأخرة ({{ $popupOverdueTasks->count() }})</span>
+                                @foreach ($popupOverdueTasks as $task)
+                                    <a href="{{ route('admin.tasks.show', $task) }}" class="related-task-item d-block text-decoration-none text-reset">
+                                        <div class="fw-semibold small">{{ $task->title }}</div>
+                                        <div class="text-danger" style="font-size:12px;">
+                                            الموعد كان: {{ $task->due_at?->format('Y-m-d H:i') }}
+                                        </div>
+                                    </a>
+                                @endforeach
+                            </div>
+                        @endif
+
+                        @if ($popupTodayTasks->isNotEmpty())
+                            <div>
+                                <span class="badge bg-primary mb-2">مهام اليوم ({{ $popupTodayTasks->count() }})</span>
+                                @foreach ($popupTodayTasks as $task)
+                                    <a href="{{ route('admin.tasks.show', $task) }}" class="related-task-item d-block text-decoration-none text-reset">
+                                        <div class="fw-semibold small">{{ $task->title }}</div>
+                                        <div class="text-muted" style="font-size:12px;">
+                                            الموعد: {{ $task->due_at?->format('Y-m-d H:i') }}
+                                        </div>
+                                    </a>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">إغلاق</button>
+                        <a href="{{ route('admin.tasks.index') }}" class="btn btn-primary">عرض كل المهام</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @push('scripts')
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    var modalEl = document.getElementById('tasksPopupModal');
+
+                    if (modalEl) {
+                        new bootstrap.Modal(modalEl).show();
+                    }
+                });
+            </script>
+        @endpush
+    @endif
 @endsection

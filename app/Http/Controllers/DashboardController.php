@@ -235,7 +235,20 @@ class DashboardController extends Controller
             ->limit(6)
             ->get();
 
+        $showTasksPopup = false;
+        $popupTodayTasks = collect();
+        $popupOverdueTasks = collect();
+
+        if (session('show_tasks_popup') && $user->member) {
+            $showTasksPopup = true;
+            $popupTodayTasks = Task::query()->forMember($user->member->id)->dueToday()->get();
+            $popupOverdueTasks = Task::query()->forMember($user->member->id)->overdue()->get();
+        }
+
         return view('admin.dashboard', compact(
+            'showTasksPopup',
+            'popupTodayTasks',
+            'popupOverdueTasks',
             'clientsCount',
             'newClientsCount',
             'activeClientsCount',

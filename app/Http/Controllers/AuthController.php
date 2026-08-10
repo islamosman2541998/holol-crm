@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\TaskReminders;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -57,6 +58,10 @@ class AuthController extends Controller
         $user->update([
             'last_login_at' => now(),
         ]);
+
+        if (TaskReminders::notifyIfDue($user)) {
+            $request->session()->flash('show_tasks_popup', true);
+        }
 
         return redirect()->intended(route('admin.dashboard'));
     }
