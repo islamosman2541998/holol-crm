@@ -52,6 +52,10 @@ class TeamController extends Controller
             'status' => $request->boolean('status'),
         ]);
 
+        if (! empty($data['manager_member_id'])) {
+            Member::whereKey($data['manager_member_id'])->update(['is_manager' => true]);
+        }
+
         $team->ensureRole();
 
         if (auth()->user()->can('teams.permissions')) {
@@ -92,10 +96,15 @@ class TeamController extends Controller
     public function edit(Team $team)
     {
         $managers = Member::query()
-            ->where('is_manager', true)
             ->where(function ($query) use ($team) {
-                $query->where('status', 'active')
-                    ->orWhere('id', $team->manager_member_id);
+                $query->where(function ($query) {
+                    $query->where('is_manager', true)
+                        ->where('status', 'active');
+                });
+
+                if ($team->manager_member_id) {
+                    $query->orWhere('id', $team->manager_member_id);
+                }
             })
             ->orderBy('name')
             ->get();
@@ -144,6 +153,10 @@ class TeamController extends Controller
             'description' => $data['description'] ?? null,
             'status' => $request->boolean('status'),
         ]);
+
+        if (! empty($data['manager_member_id'])) {
+            Member::whereKey($data['manager_member_id'])->update(['is_manager' => true]);
+        }
 
         if ($oldRoleName !== $newRoleName) {
             $oldRole = \Spatie\Permission\Models\Role::query()
