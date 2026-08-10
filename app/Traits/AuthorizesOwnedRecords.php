@@ -7,9 +7,10 @@ use App\Models\Member;
 trait AuthorizesOwnedRecords
 {
     /**
-     * Allow access when the user has the "view_all" permission, owns the record
-     * (its assigned user id matches the current user), or manages the team the
-     * owning user belongs to. Aborts with 403 otherwise.
+     * Allow access when the user has the "view_all" permission, the record is
+     * unclaimed (no owner assigned yet), owns the record (its assigned user id
+     * matches the current user), or manages the team the owning user belongs to.
+     * Aborts with 403 otherwise.
      */
     private function authorizeOwnedRecordAccess(string $viewAllPermission, ?int $ownerId): void
     {
@@ -19,13 +20,17 @@ trait AuthorizesOwnedRecords
             return;
         }
 
-        if ($ownerId && (int) $ownerId === (int) $user->id) {
+        if (! $ownerId) {
+            return;
+        }
+
+        if ((int) $ownerId === (int) $user->id) {
             return;
         }
 
         $member = $user->member;
 
-        if ($member && $member->is_manager && $member->team_id && $ownerId) {
+        if ($member && $member->is_manager && $member->team_id) {
             $isTeamMember = Member::query()
                 ->where('team_id', $member->team_id)
                 ->where('user_id', $ownerId)
@@ -41,7 +46,8 @@ trait AuthorizesOwnedRecords
 
     /**
      * Constrain a listing query to only the records the current user is allowed to see,
-     * following the same rule as authorizeOwnedRecordAccess() above.
+     * following the same rule as authorizeOwnedRecordAccess() above. Unclaimed records
+     * (no owner assigned yet) stay visible to everyone with the base module permission.
      */
     private function applyOwnedRecordScope($query, string $viewAllPermission, string $ownerColumn): void
     {
@@ -53,23 +59,18 @@ trait AuthorizesOwnedRecords
 
         $member = $user->member;
 
-        if (! $member) {
-            $query->whereRaw('1 = 0');
+        $query->where(function ($query) use ($ownerColumn, $user, $member) {
+            $query->whereNull($ownerColumn)
+                ->orWhere($ownerColumn, $user->id);
 
-            return;
-        }
+            if ($member && $member->is_manager && $member->team_id) {
+                $teamUserIds = Member::query()
+                    ->where('team_id', $member->team_id)
+                    ->whereNotNull('user_id')
+                    ->pluck('user_id');
 
-        if ($member->is_manager && $member->team_id) {
-            $teamUserIds = Member::query()
-                ->where('team_id', $member->team_id)
-                ->whereNotNull('user_id')
-                ->pluck('user_id');
-
-            $query->whereIn($ownerColumn, $teamUserIds);
-
-            return;
-        }
-
-        $query->where($ownerColumn, $user->id);
+                $query->orWhereIn($ownerColumn, $teamUserIds);
+            }
+        });
     }
 }
