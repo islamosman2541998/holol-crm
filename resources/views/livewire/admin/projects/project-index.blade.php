@@ -134,10 +134,14 @@
                                 </td>
 
                                 <td>
-                                    <a href="{{ route('admin.clients.show', $project->client) }}"
-                                        class="text-decoration-none">
-                                        {{ $project->client?->name ?? '-' }}
-                                    </a>
+                                    @if ($project->client)
+                                        <a href="{{ route('admin.clients.show', $project->client) }}"
+                                            class="text-decoration-none">
+                                            {{ $project->client->name }}
+                                        </a>
+                                    @else
+                                        -
+                                    @endif
                                 </td>
 
                                 <td>{{ $project->service?->name ?? '-' }}</td>

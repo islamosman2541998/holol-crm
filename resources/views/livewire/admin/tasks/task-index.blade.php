@@ -149,10 +149,14 @@
 
                                         <div class="small text-muted mt-1">
                                             العميل:
-                                            <a href="{{ route('admin.clients.show', $task->project->client) }}"
-                                                class="text-decoration-none">
-                                                {{ $task->project->client?->name ?? '-' }}
-                                            </a>
+                                            @if ($task->project->client)
+                                                <a href="{{ route('admin.clients.show', $task->project->client) }}"
+                                                    class="text-decoration-none">
+                                                    {{ $task->project->client->name }}
+                                                </a>
+                                            @else
+                                                -
+                                            @endif
                                         </div>
                                     @elseif ($task->client)
                                         <div>

@@ -51,9 +51,13 @@
                     <div class="client-info-item">
                         <span>العميل</span>
                         <strong>
-                            <a href="{{ route('admin.clients.show', $project->client) }}">
-                                {{ $project->client?->name ?? '-' }}
-                            </a>
+                            @if ($project->client)
+                                <a href="{{ route('admin.clients.show', $project->client) }}">
+                                    {{ $project->client->name }}
+                                </a>
+                            @else
+                                -
+                            @endif
                         </strong>
                     </div>
 
