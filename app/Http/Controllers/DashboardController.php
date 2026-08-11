@@ -152,9 +152,13 @@ class DashboardController extends Controller
                     ->where('team_id', $member->team_id)
                     ->pluck('id');
 
-                $taskQuery->whereIn('assigned_member_id', $teamMemberIds);
+                $taskQuery->whereHas('assignedMembers', function ($query) use ($teamMemberIds) {
+                    $query->whereIn('members.id', $teamMemberIds);
+                });
             } else {
-                $taskQuery->where('assigned_member_id', $member->id);
+                $taskQuery->whereHas('assignedMembers', function ($query) use ($member) {
+                    $query->where('members.id', $member->id);
+                });
             }
         }
 
@@ -182,7 +186,7 @@ class DashboardController extends Controller
             ->count();
 
         $latestTasks = (clone $taskQuery)
-            ->with(['assignedMember.team', 'client', 'lead'])
+            ->with(['assignedMembers.team', 'client', 'lead'])
             ->latest()
             ->limit(6)
             ->get();
@@ -199,8 +203,8 @@ class DashboardController extends Controller
             } else {
                 $projectQuery->where(function ($query) use ($member) {
                     $query->where('manager_member_id', $member->id)
-                        ->orWhereHas('tasks', function ($query) use ($member) {
-                            $query->where('assigned_member_id', $member->id);
+                        ->orWhereHas('tasks.assignedMembers', function ($query) use ($member) {
+                            $query->where('members.id', $member->id);
                         });
 
                     if ($member->is_manager && $member->team_id) {

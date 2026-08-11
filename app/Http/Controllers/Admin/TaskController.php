@@ -62,6 +62,9 @@ class TaskController extends Controller
     {
         $data = $this->validateTask($request);
 
+        $memberIds = $data['assigned_member_ids'] ?? [];
+        unset($data['assigned_member_ids']);
+
         $data['created_by'] = auth()->id();
 
         if (($data['status'] ?? null) === 'completed') {
@@ -70,12 +73,13 @@ class TaskController extends Controller
 
         $task = Task::query()->create($data);
 
+        $task->assignedMembers()->sync($memberIds);
+
         $task->logActivity(
             event: 'created',
             title: 'تم إنشاء المهمة',
             description: 'تم إنشاء مهمة جديدة: ' . $task->title,
             newValues: $task->only([
-                'assigned_member_id',
                 'client_id',
                 'lead_id',
                 'project_id',
@@ -84,7 +88,9 @@ class TaskController extends Controller
                 'status',
                 'start_at',
                 'due_at',
-            ])
+            ]) + [
+                'assigned_members' => $task->assignedMembers()->pluck('name')->all(),
+            ]
         );
 
         return redirect()
@@ -117,9 +123,8 @@ class TaskController extends Controller
         abort_unless($member, 403);
 
         if ($member->is_manager && $member->team_id) {
-            $isTeamTask = Member::query()
+            $isTeamTask = $task->assignedMembers()
                 ->where('team_id', $member->team_id)
-                ->where('id', $task->assigned_member_id)
                 ->exists();
 
             abort_unless($isTeamTask, 403);
@@ -127,15 +132,18 @@ class TaskController extends Controller
             return;
         }
 
-        abort_unless((int) $task->assigned_member_id === (int) $member->id, 403);
+        abort_unless(
+            $task->assignedMembers()->where('members.id', $member->id)->exists(),
+            403
+        );
     }
 
     public function show(Task $task)
     {
         $this->authorizeTaskAccess($task);
         $task->load([
-            'assignedMember.team',
-            'assignedMember.user',
+            'assignedMembers.team',
+            'assignedMembers.user',
             'creator',
             'client',
             'lead',
@@ -149,13 +157,15 @@ class TaskController extends Controller
     {
         $this->authorizeTaskAccess($task);
 
+        $assignedMemberIds = $task->assignedMembers()->pluck('members.id')->all();
+
         $members = Member::query()
             ->with(['team', 'user'])
-            ->where(function ($query) use ($task) {
+            ->where(function ($query) use ($assignedMemberIds) {
                 $query->where('status', 'active');
 
-                if ($task->assigned_member_id) {
-                    $query->orWhere('id', $task->assigned_member_id);
+                if ($assignedMemberIds) {
+                    $query->orWhereIn('id', $assignedMemberIds);
                 }
             })
             ->orderBy('name')
@@ -200,7 +210,6 @@ class TaskController extends Controller
     {
         $this->authorizeTaskAccess($task);
         $oldValues = $task->only([
-            'assigned_member_id',
             'client_id',
             'lead_id',
             'project_id',
@@ -212,9 +221,14 @@ class TaskController extends Controller
             'due_at',
             'completed_at',
             'notes',
-        ]);
+        ]) + [
+            'assigned_members' => $task->assignedMembers()->pluck('name')->all(),
+        ];
 
         $data = $this->validateTask($request, $task);
+
+        $memberIds = $data['assigned_member_ids'] ?? [];
+        unset($data['assigned_member_ids']);
 
         if (($data['status'] ?? null) === 'completed' && ! $task->completed_at) {
             $data['completed_at'] = now();
@@ -226,13 +240,14 @@ class TaskController extends Controller
 
         $task->update($data);
 
+        $task->assignedMembers()->sync($memberIds);
+
         $task->logActivity(
             event: 'updated',
             title: 'تم تحديث المهمة',
             description: 'تم تحديث بيانات المهمة: ' . $task->title,
             oldValues: $oldValues,
             newValues: $task->only([
-                'assigned_member_id',
                 'client_id',
                 'lead_id',
                 'project_id',
@@ -244,7 +259,9 @@ class TaskController extends Controller
                 'due_at',
                 'completed_at',
                 'notes',
-            ])
+            ]) + [
+                'assigned_members' => $task->assignedMembers()->pluck('name')->all(),
+            ]
         );
 
         return redirect()
@@ -305,7 +322,8 @@ class TaskController extends Controller
     private function validateTask(Request $request, ?Task $task = null): array
     {
         $data = $request->validate([
-            'assigned_member_id' => ['nullable', 'exists:members,id'],
+            'assigned_member_ids' => ['nullable', 'array'],
+            'assigned_member_ids.*' => ['integer', 'exists:members,id'],
             'client_id' => ['nullable', 'exists:clients,id'],
             'lead_id' => ['nullable', 'exists:leads,id'],
             'project_id' => ['nullable', 'exists:projects,id'],

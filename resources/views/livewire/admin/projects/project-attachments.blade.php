@@ -39,6 +39,43 @@
                         </button>
                     </div>
                 </form>
+
+                <hr>
+
+                <form wire:submit.prevent="saveLink" class="mb-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">الرابط</label>
+                            <input type="url"
+                                   wire:model.defer="linkUrl"
+                                   class="form-control @error('linkUrl') is-invalid @enderror"
+                                   placeholder="https://example.com/file">
+
+                            @error('linkUrl')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">وصف الرابط</label>
+                            <input type="text"
+                                   wire:model.defer="linkDescription"
+                                   class="form-control @error('linkDescription') is-invalid @enderror"
+                                   placeholder="مثال: ملف التصميم على Google Drive">
+
+                            @error('linkDescription')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end mt-3">
+                        <button class="btn btn-outline-primary" wire:loading.attr="disabled" wire:target="saveLink">
+                            <i class="bi bi-link-45deg"></i>
+                            إضافة رابط
+                        </button>
+                    </div>
+                </form>
             @endcan
 
             <div class="table-responsive">
@@ -58,28 +95,45 @@
                             <tr>
                                 <td>
                                     <div class="fw-semibold">
+                                        @if ($attachment->is_link)
+                                            <i class="bi bi-link-45deg text-primary"></i>
+                                        @else
+                                            <i class="bi bi-paperclip text-muted"></i>
+                                        @endif
                                         {{ $attachment->file_name }}
                                     </div>
 
-                                    @if ($attachment->notes)
+                                    @if ($attachment->is_link)
+                                        <div class="small text-muted text-truncate" style="max-width: 320px;">
+                                            {{ $attachment->link_url }}
+                                        </div>
+                                    @elseif ($attachment->notes)
                                         <div class="small text-muted">
                                             {{ $attachment->notes }}
                                         </div>
                                     @endif
                                 </td>
 
-                                <td>{{ $attachment->file_size_label }}</td>
+                                <td>{{ $attachment->is_link ? 'رابط' : $attachment->file_size_label }}</td>
 
                                 <td>{{ $attachment->member?->name ?? $attachment->user?->name ?? 'System' }}</td>
 
                                 <td>{{ $attachment->created_at->format('Y-m-d H:i') }}</td>
 
                                 <td class="text-end">
-                                    <a href="{{ route('admin.projects.attachments.download', ['project' => $project->id, 'attachment' => $attachment->id]) }}"
-                                       target="_blank"
-                                       class="btn btn-sm btn-outline-dark">
-                                        <i class="bi bi-download"></i>
-                                    </a>
+                                    @if ($attachment->is_link)
+                                        <a href="{{ $attachment->link_url }}"
+                                           target="_blank" rel="noopener noreferrer"
+                                           class="btn btn-sm btn-outline-dark">
+                                            <i class="bi bi-box-arrow-up-right"></i>
+                                        </a>
+                                    @else
+                                        <a href="{{ route('admin.projects.attachments.download', ['project' => $project->id, 'attachment' => $attachment->id]) }}"
+                                           target="_blank"
+                                           class="btn btn-sm btn-outline-dark">
+                                            <i class="bi bi-download"></i>
+                                        </a>
+                                    @endif
 
                                     @can('projects.edit')
                                         <button type="button"

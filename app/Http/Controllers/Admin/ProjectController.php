@@ -340,6 +340,8 @@ class ProjectController extends Controller
 
         abort_unless((int) $attachment->project_id === (int) $project->id, 404);
 
+        abort_if($attachment->is_link, 404);
+
         abort_unless(Storage::disk('local')->exists($attachment->file_path), 404);
 
         return Storage::disk('local')->download($attachment->file_path, $attachment->file_name);
@@ -366,7 +368,9 @@ class ProjectController extends Controller
         }
 
         $hasTaskInsideProject = $project->tasks()
-            ->where('assigned_member_id', $member->id)
+            ->whereHas('assignedMembers', function ($query) use ($member) {
+                $query->where('members.id', $member->id);
+            })
             ->exists();
 
         abort_unless($hasTaskInsideProject, 403);

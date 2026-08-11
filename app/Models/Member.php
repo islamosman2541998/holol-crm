@@ -93,12 +93,13 @@ class Member extends Model
     }
     public function tasks()
     {
-        return $this->hasMany(Task::class, 'assigned_member_id');
+        return $this->belongsToMany(Task::class, 'task_member')->withTimestamps();
     }
 
     public function openTasks()
     {
-        return $this->hasMany(Task::class, 'assigned_member_id')
+        return $this->belongsToMany(Task::class, 'task_member')
+            ->withTimestamps()
             ->whereNotIn('status', ['completed', 'cancelled']);
     }
 

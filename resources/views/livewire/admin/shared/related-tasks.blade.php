@@ -40,11 +40,7 @@
 
                             <div class="small text-muted mt-1">
                                 المسؤول:
-                                {{ $task->assignedMember?->name ?? '-' }}
-
-                                @if ($task->assignedMember?->team)
-                                    - {{ $task->assignedMember->team->name }}
-                                @endif
+                                {{ $task->assignedMembers->pluck('name')->implode('، ') ?: '-' }}
                             </div>
                             <div class="small text-muted">
                                 @if ($task->project)

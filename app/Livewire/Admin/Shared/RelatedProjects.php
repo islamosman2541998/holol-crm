@@ -36,8 +36,8 @@ class RelatedProjects extends Component
             ->when($this->type === 'member', function ($query) {
                 $query->where(function ($query) {
                     $query->where('manager_member_id', $this->id)
-                        ->orWhereHas('tasks', function ($query) {
-                            $query->where('assigned_member_id', $this->id);
+                        ->orWhereHas('tasks.assignedMembers', function ($query) {
+                            $query->where('members.id', $this->id);
                         });
                 });
             })
@@ -78,8 +78,8 @@ class RelatedProjects extends Component
 
         $query->where(function ($query) use ($member) {
             $query->where('manager_member_id', $member->id)
-                ->orWhereHas('tasks', function ($query) use ($member) {
-                    $query->where('assigned_member_id', $member->id);
+                ->orWhereHas('tasks.assignedMembers', function ($query) use ($member) {
+                    $query->where('members.id', $member->id);
                 });
 
             if ($member->is_manager && $member->team_id) {

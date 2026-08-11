@@ -105,7 +105,7 @@ class TaskComments extends Component
         abort_unless($member, 403);
 
         if ($member->is_manager && $member->team_id) {
-            $isTeamTask = $this->task->assignedMember()
+            $isTeamTask = $this->task->assignedMembers()
                 ->where('team_id', $member->team_id)
                 ->exists();
 
@@ -114,6 +114,9 @@ class TaskComments extends Component
             return;
         }
 
-        abort_unless((int) $this->task->assigned_member_id === (int) $member->id, 403);
+        abort_unless(
+            $this->task->assignedMembers()->where('members.id', $member->id)->exists(),
+            403
+        );
     }
 }

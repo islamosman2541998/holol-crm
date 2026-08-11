@@ -17,6 +17,9 @@ class ProjectAttachments extends Component
     public $file;
     public string $notes = '';
 
+    public string $linkUrl = '';
+    public string $linkDescription = '';
+
     public function mount(Project $project): void
     {
         $this->project = $project;
@@ -46,6 +49,7 @@ class ProjectAttachments extends Component
             'project_id' => $this->project->id,
             'user_id' => auth()->id(),
             'member_id' => auth()->user()?->member?->id,
+            'type' => 'file',
             'file_name' => $uploadedFile->getClientOriginalName(),
             'file_path' => $path,
             'file_type' => $uploadedFile->getClientMimeType(),
@@ -70,6 +74,47 @@ class ProjectAttachments extends Component
         $this->dispatch('toast', type: 'success', message: 'تم رفع المرفق بنجاح');
     }
 
+    public function saveLink(): void
+    {
+        abort_unless(auth()->user()->can('projects.edit'), 403);
+
+        $this->authorizeProjectAccess();
+
+        $data = $this->validate([
+            'linkUrl' => ['required', 'url', 'max:2048'],
+            'linkDescription' => ['required', 'string', 'max:255'],
+        ], [
+            'linkUrl.required' => 'الرابط مطلوب',
+            'linkUrl.url' => 'صيغة الرابط غير صحيحة',
+            'linkDescription.required' => 'وصف الرابط مطلوب',
+        ]);
+
+        $attachment = ProjectAttachment::query()->create([
+            'project_id' => $this->project->id,
+            'user_id' => auth()->id(),
+            'member_id' => auth()->user()?->member?->id,
+            'type' => 'link',
+            'link_url' => $data['linkUrl'],
+            'file_name' => $data['linkDescription'],
+        ]);
+
+        $this->project->logActivity(
+            event: 'attachment_created',
+            title: 'تمت إضافة رابط',
+            description: 'تمت إضافة رابط جديد على المشروع: ' . $attachment->file_name,
+            newValues: [
+                'attachment_id' => $attachment->id,
+                'file_name' => $attachment->file_name,
+                'link_url' => $attachment->link_url,
+            ]
+        );
+
+        $this->reset(['linkUrl', 'linkDescription']);
+
+        $this->dispatch('activity-log-updated');
+        $this->dispatch('toast', type: 'success', message: 'تمت إضافة الرابط بنجاح');
+    }
+
     public function delete(int $attachmentId): void
     {
         abort_unless(auth()->user()->can('projects.edit'), 403);
@@ -91,7 +136,9 @@ class ProjectAttachments extends Component
             ]
         );
 
-        Storage::disk('local')->delete($attachment->file_path);
+        if (! $attachment->is_link && $attachment->file_path) {
+            Storage::disk('local')->delete($attachment->file_path);
+        }
 
         $attachment->delete();
 
@@ -133,7 +180,9 @@ class ProjectAttachments extends Component
         }
 
         $hasTaskInsideProject = $this->project->tasks()
-            ->where('assigned_member_id', $member->id)
+            ->whereHas('assignedMembers', function ($query) use ($member) {
+                $query->where('members.id', $member->id);
+            })
             ->exists();
 
         abort_unless($hasTaskInsideProject, 403);

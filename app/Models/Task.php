@@ -12,7 +12,6 @@ class Task extends Model
     use HasFactory, SoftDeletes, HasActivityLogs;
 
     protected $fillable = [
-        'assigned_member_id',
         'project_id',
         'created_by',
         'client_id',
@@ -36,9 +35,9 @@ class Task extends Model
         ];
     }
 
-    public function assignedMember()
+    public function assignedMembers()
     {
-        return $this->belongsTo(Member::class, 'assigned_member_id');
+        return $this->belongsToMany(Member::class, 'task_member')->withTimestamps();
     }
 
     public function creator()
@@ -128,7 +127,9 @@ public function project()
 
     public function scopeForMember($query, int $memberId)
     {
-        return $query->where('assigned_member_id', $memberId);
+        return $query->whereHas('assignedMembers', function ($query) use ($memberId) {
+            $query->where('members.id', $memberId);
+        });
     }
     public function comments()
 {

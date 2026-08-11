@@ -21,12 +21,12 @@ class RelatedTasks extends Component
     {
         $query = Task::query()
             ->with([
-                'assignedMember.team',
+                'assignedMembers.team',
                 'client',
                 'lead',
                 'project.client',
                 'creator',
-                
+
             ])
             ->when($this->type === 'client', function ($query) {
                 $query->where('client_id', $this->id);
@@ -35,7 +35,9 @@ class RelatedTasks extends Component
                 $query->where('lead_id', $this->id);
             })
             ->when($this->type === 'member', function ($query) {
-                $query->where('assigned_member_id', $this->id);
+                $query->whereHas('assignedMembers', function ($query) {
+                    $query->where('members.id', $this->id);
+                });
             })
             ->when($this->type === 'project', function ($query) {
                 $query->where('project_id', $this->id);
@@ -78,11 +80,15 @@ class RelatedTasks extends Component
                 ->where('team_id', $member->team_id)
                 ->pluck('id');
 
-            $query->whereIn('assigned_member_id', $teamMemberIds);
+            $query->whereHas('assignedMembers', function ($query) use ($teamMemberIds) {
+                $query->whereIn('members.id', $teamMemberIds);
+            });
 
             return;
         }
 
-        $query->where('assigned_member_id', $member->id);
+        $query->whereHas('assignedMembers', function ($query) use ($member) {
+            $query->where('members.id', $member->id);
+        });
     }
 }

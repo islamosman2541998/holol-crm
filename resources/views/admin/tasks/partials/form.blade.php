@@ -19,13 +19,18 @@
     </div>
 
     <div class="col-md-4">
-        <label class="form-label">المسؤول عن المهمة</label>
-        <select name="assigned_member_id" class="form-select" id="taskAssignedMemberSelect">
-            <option value="">بدون مسؤول</option>
-
+        <label class="form-label">المسؤولون عن المهمة</label>
+        @php
+            $selectedMemberIds = old(
+                'assigned_member_ids',
+                $task?->assignedMembers->pluck('id')->all()
+                    ?? ($selectedMemberId ? [(int) $selectedMemberId] : [])
+            );
+        @endphp
+        <select name="assigned_member_ids[]" class="form-select" id="taskAssignedMemberSelect" multiple size="4">
             @foreach ($members as $member)
                 <option value="{{ $member->id }}"
-                    @selected(old('assigned_member_id', $task?->assigned_member_id ?? ($selectedMemberId ?? null)) == $member->id)>
+                    @selected(in_array($member->id, $selectedMemberIds))>
                     {{ $member->name }}
 
                     @if ($member->team)
@@ -38,6 +43,7 @@
                 </option>
             @endforeach
         </select>
+        <div class="form-text">اضغط Ctrl (أو Cmd) مع الاختيار لتحديد أكثر من عضو</div>
     </div>
 
     <div class="col-md-6">
@@ -211,9 +217,14 @@
                     if (
                         assignedMemberSelect &&
                         selectedProjectManagerId &&
-                        !assignedMemberSelect.value
+                        assignedMemberSelect.selectedOptions.length === 0
                     ) {
-                        assignedMemberSelect.value = selectedProjectManagerId;
+                        const managerOption = Array.from(assignedMemberSelect.options)
+                            .find(option => option.value === selectedProjectManagerId);
+
+                        if (managerOption) {
+                            managerOption.selected = true;
+                        }
                     }
 
                     leadSelect.value = '';

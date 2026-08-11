@@ -174,7 +174,9 @@ class ProjectMilestones extends Component
         }
 
         $hasTaskInsideProject = $this->project->tasks()
-            ->where('assigned_member_id', $member->id)
+            ->whereHas('assignedMembers', function ($query) use ($member) {
+                $query->where('members.id', $member->id);
+            })
             ->exists();
 
         abort_unless($hasTaskInsideProject, 403);

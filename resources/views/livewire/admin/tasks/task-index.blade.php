@@ -127,14 +127,16 @@
                                 </td>
 
                                 <td>
-                                    @if ($task->assignedMember)
-                                        <div>{{ $task->assignedMember->name }}</div>
-                                        <div class="small text-muted">
-                                            {{ $task->assignedMember->team?->name ?? '-' }}
+                                    @forelse ($task->assignedMembers as $assignedMember)
+                                        <div>
+                                            {{ $assignedMember->name }}
+                                            <span class="small text-muted">
+                                                {{ $assignedMember->team?->name ? '- ' . $assignedMember->team->name : '' }}
+                                            </span>
                                         </div>
-                                    @else
+                                    @empty
                                         -
-                                    @endif
+                                    @endforelse
                                 </td>
 
                                 <td>

@@ -37,21 +37,23 @@
 
                 <div class="card-body">
                     <div class="client-info-item">
-                        <span>المسؤول</span>
+                        <span>المسؤولون</span>
                         <strong>
-                            @if ($task->assignedMember)
-                                <a href="{{ route('admin.members.show', $task->assignedMember) }}">
-                                    {{ $task->assignedMember->name }}
-                                </a>
-                            @else
+                            @forelse ($task->assignedMembers as $assignedMember)
+                                <a href="{{ route('admin.members.show', $assignedMember) }}">
+                                    {{ $assignedMember->name }}
+                                </a>@if (! $loop->last), @endif
+                            @empty
                                 -
-                            @endif
+                            @endforelse
                         </strong>
                     </div>
 
                     <div class="client-info-item">
-                        <span>الفريق</span>
-                        <strong>{{ $task->assignedMember?->team?->name ?? '-' }}</strong>
+                        <span>الفرق</span>
+                        <strong>
+                            {{ $task->assignedMembers->pluck('team.name')->filter()->unique()->implode('، ') ?: '-' }}
+                        </strong>
                     </div>
 
                     <div class="client-info-item">

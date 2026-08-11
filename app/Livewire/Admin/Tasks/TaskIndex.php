@@ -80,7 +80,7 @@ public string $dateFilter = '';
     {
         $query = Task::query()
             ->with([
-                'assignedMember.team',
+                'assignedMembers.team',
                 'creator',
                 'client',
                 'lead',
@@ -113,10 +113,12 @@ public string $dateFilter = '';
                 $query->where('priority', $this->priority);
             })
             ->when($this->assignedMemberId, function ($query) {
-                $query->where('assigned_member_id', $this->assignedMemberId);
+                $query->whereHas('assignedMembers', function ($query) {
+                    $query->where('members.id', $this->assignedMemberId);
+                });
             })
             ->when($this->teamId, function ($query) {
-                $query->whereHas('assignedMember', function ($query) {
+                $query->whereHas('assignedMembers', function ($query) {
                     $query->where('team_id', $this->teamId);
                 });
             })
@@ -175,11 +177,15 @@ public string $dateFilter = '';
                 ->where('team_id', $member->team_id)
                 ->pluck('id');
 
-            $query->whereIn('assigned_member_id', $teamMemberIds);
+            $query->whereHas('assignedMembers', function ($query) use ($teamMemberIds) {
+                $query->whereIn('members.id', $teamMemberIds);
+            });
 
             return;
         }
 
-        $query->where('assigned_member_id', $member->id);
+        $query->whereHas('assignedMembers', function ($query) use ($member) {
+            $query->where('members.id', $member->id);
+        });
     }
 }
