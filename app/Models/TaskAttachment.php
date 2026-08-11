@@ -14,12 +14,19 @@ class TaskAttachment extends Model
         'task_id',
         'user_id',
         'member_id',
+        'type',
+        'link_url',
         'file_name',
         'file_path',
         'file_type',
         'file_size',
         'notes',
     ];
+
+    public function getIsLinkAttribute(): bool
+    {
+        return $this->type === 'link';
+    }
 
     public function task()
     {

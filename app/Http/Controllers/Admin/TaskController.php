@@ -97,6 +97,8 @@ class TaskController extends Controller
 
         abort_unless((int) $attachment->task_id === (int) $task->id, 404);
 
+        abort_if($attachment->is_link, 404);
+
         abort_unless(Storage::disk('local')->exists($attachment->file_path), 404);
 
         return Storage::disk('local')->download($attachment->file_path, $attachment->file_name);
