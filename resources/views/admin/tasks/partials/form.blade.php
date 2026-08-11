@@ -26,24 +26,30 @@
                 $task?->assignedMembers->pluck('id')->all()
                     ?? ($selectedMemberId ? [(int) $selectedMemberId] : [])
             );
+
+            $memberOptions = $members->map(fn ($member) => [
+                'id' => $member->id,
+                'label' => trim(
+                    $member->name
+                    . ($member->team ? ' - ' . $member->team->name : '')
+                    . ($member->job_title ? ' - ' . $member->job_title : '')
+                ),
+            ]);
         @endphp
-        <select name="assigned_member_ids[]" class="form-select" id="taskAssignedMemberSelect" multiple size="4">
-            @foreach ($members as $member)
-                <option value="{{ $member->id }}"
-                    @selected(in_array($member->id, $selectedMemberIds))>
-                    {{ $member->name }}
 
-                    @if ($member->team)
-                        - {{ $member->team->name }}
-                    @endif
+        <div id="taskAssignedMemberWidget"
+             data-members="{{ $memberOptions->values()->toJson() }}"
+             data-selected="{{ json_encode(array_values(array_map('intval', $selectedMemberIds))) }}">
+            <div id="taskAssignedMembersChips" class="d-flex flex-wrap gap-2 mb-2"></div>
 
-                    @if ($member->job_title)
-                        - {{ $member->job_title }}
-                    @endif
-                </option>
-            @endforeach
-        </select>
-        <div class="form-text">اضغط Ctrl (أو Cmd) مع الاختيار لتحديد أكثر من عضو</div>
+            <select class="form-select" id="taskAssignedMemberPicker">
+                <option value="">-- اختر عضو لإضافته --</option>
+            </select>
+
+            <div id="taskAssignedMemberInputs"></div>
+        </div>
+
+        <div class="form-text">اختر عضو من القائمة لإضافته كمسؤول، وكرر الاختيار لإضافة أكتر من عضو</div>
     </div>
 
     <div class="col-md-6">
@@ -190,7 +196,77 @@
             const projectSelect = document.getElementById('taskProjectSelect');
             const clientSelect = document.getElementById('taskClientSelect');
             const leadSelect = document.getElementById('taskLeadSelect');
-            const assignedMemberSelect = document.getElementById('taskAssignedMemberSelect');
+
+            const widget = document.getElementById('taskAssignedMemberWidget');
+            const chipsContainer = document.getElementById('taskAssignedMembersChips');
+            const picker = document.getElementById('taskAssignedMemberPicker');
+            const inputsContainer = document.getElementById('taskAssignedMemberInputs');
+
+            const allMembers = JSON.parse(widget.dataset.members);
+            let selectedIds = JSON.parse(widget.dataset.selected)
+                .filter(id => allMembers.some(member => member.id === id));
+
+            function renderAssignedMembers() {
+                chipsContainer.innerHTML = '';
+                inputsContainer.innerHTML = '';
+
+                selectedIds.forEach(function (id) {
+                    const member = allMembers.find(m => m.id === id);
+
+                    if (!member) {
+                        return;
+                    }
+
+                    const chip = document.createElement('span');
+                    chip.className = 'badge rounded-pill text-bg-light border d-inline-flex align-items-center gap-2 py-2 px-3';
+                    chip.innerHTML = '<span></span><button type="button" class="btn-close" aria-label="إزالة" style="font-size:.6rem;"></button>';
+                    chip.querySelector('span').textContent = member.label;
+                    chip.querySelector('button').addEventListener('click', function () {
+                        selectedIds = selectedIds.filter(existingId => existingId !== id);
+                        renderAssignedMembers();
+                    });
+                    chipsContainer.appendChild(chip);
+
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'assigned_member_ids[]';
+                    input.value = id;
+                    inputsContainer.appendChild(input);
+                });
+
+                picker.innerHTML = '';
+
+                const placeholder = document.createElement('option');
+                placeholder.value = '';
+                placeholder.textContent = '-- اختر عضو لإضافته --';
+                picker.appendChild(placeholder);
+
+                allMembers
+                    .filter(member => ! selectedIds.includes(member.id))
+                    .forEach(function (member) {
+                        const option = document.createElement('option');
+                        option.value = member.id;
+                        option.textContent = member.label;
+                        picker.appendChild(option);
+                    });
+            }
+
+            function addAssignedMember(id) {
+                if (selectedIds.includes(id) || ! allMembers.some(member => member.id === id)) {
+                    return;
+                }
+
+                selectedIds.push(id);
+                renderAssignedMembers();
+            }
+
+            picker.addEventListener('change', function () {
+                if (picker.value) {
+                    addAssignedMember(parseInt(picker.value, 10));
+                }
+            });
+
+            renderAssignedMembers();
 
             if (!clientSelect || !leadSelect) {
                 return;
@@ -214,17 +290,8 @@
                         clientSelect.value = selectedProjectClientId;
                     }
 
-                    if (
-                        assignedMemberSelect &&
-                        selectedProjectManagerId &&
-                        assignedMemberSelect.selectedOptions.length === 0
-                    ) {
-                        const managerOption = Array.from(assignedMemberSelect.options)
-                            .find(option => option.value === selectedProjectManagerId);
-
-                        if (managerOption) {
-                            managerOption.selected = true;
-                        }
+                    if (selectedProjectManagerId && selectedIds.length === 0) {
+                        addAssignedMember(parseInt(selectedProjectManagerId, 10));
                     }
 
                     leadSelect.value = '';
