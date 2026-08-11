@@ -13,6 +13,7 @@ class Quotation extends Model
 
     protected $fillable = [
         'client_id',
+        'lead_id',
         'user_id',
         'quotation_number',
         'subtotal',
@@ -42,6 +43,11 @@ class Quotation extends Model
     public function client()
     {
         return $this->belongsTo(Client::class);
+    }
+
+    public function lead()
+    {
+        return $this->belongsTo(Lead::class);
     }
 
     public function user()

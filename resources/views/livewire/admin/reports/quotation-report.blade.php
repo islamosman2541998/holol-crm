@@ -247,9 +247,20 @@
                                 </td>
 
                                 <td>
-                                    <div class="fw-semibold">{{ $quotation->client?->name ?? '-' }}</div>
-                                    <div class="small text-muted">{{ $quotation->client?->company ?? '-' }}</div>
-                                    <div class="small text-muted">{{ $quotation->client?->mobile ?? '-' }}</div>
+                                    @if ($quotation->client)
+                                        <div class="fw-semibold">{{ $quotation->client->name }}</div>
+                                        <div class="small text-muted">{{ $quotation->client->company ?? '-' }}</div>
+                                        <div class="small text-muted">{{ $quotation->client->mobile ?? '-' }}</div>
+                                    @elseif ($quotation->lead)
+                                        <div class="fw-semibold">
+                                            {{ $quotation->lead->name }}
+                                            <span class="badge bg-light text-dark border">Lead</span>
+                                        </div>
+                                        <div class="small text-muted">{{ $quotation->lead->company ?? '-' }}</div>
+                                        <div class="small text-muted">{{ $quotation->lead->mobile ?? '-' }}</div>
+                                    @else
+                                        -
+                                    @endif
                                 </td>
 
                                 <td>

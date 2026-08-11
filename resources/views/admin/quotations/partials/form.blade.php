@@ -48,6 +48,23 @@
                 </option>
             @endforeach
         </select>
+        <div class="form-text">
+            اختار عميل أو Lead، مش الاتنين مع بعض.
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <label class="form-label">Lead</label>
+        <select name="lead_id" class="form-select">
+            <option value="">اختار Lead</option>
+
+            @foreach ($leads as $lead)
+                <option value="{{ $lead->id }}"
+                   @selected(old('lead_id', $quotation?->lead_id ?? ($selectedLeadId ?? null)) == $lead->id)>
+                    {{ $lead->name }} - {{ $lead->company ?? 'بدون شركة' }}
+                </option>
+            @endforeach
+        </select>
     </div>
 
     <div class="col-md-3">

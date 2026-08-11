@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Client;
+use App\Models\Lead;
 use App\Models\Quotation;
 use App\Models\Service;
 use App\Traits\AuthorizesOwnedRecords;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Mpdf\Mpdf;
 use Mpdf\Output\Destination;
 
@@ -28,17 +30,25 @@ class QuotationController extends Controller
             ->orderBy('name')
             ->get();
 
+        $leads = Lead::query()
+            ->where('status', '!=', 'converted')
+            ->orderBy('name')
+            ->get();
+
         $services = Service::query()
             ->where('status', true)
             ->orderBy('name')
             ->get();
 
         $selectedClientId = request('client_id');
+        $selectedLeadId = request('lead_id');
 
         return view('admin.quotations.create', compact(
             'clients',
+            'leads',
             'services',
-            'selectedClientId'
+            'selectedClientId',
+            'selectedLeadId'
         ));
     }
 
@@ -54,7 +64,8 @@ class QuotationController extends Controller
                     $totals = $this->calculateTotals($data);
 
                     $quotation = Quotation::query()->create([
-                        'client_id' => $data['client_id'],
+                        'client_id' => $data['client_id'] ?? null,
+                        'lead_id' => $data['lead_id'] ?? null,
                         'user_id' => auth()->id(),
                         'quotation_number' => $this->generateQuotationNumber(),
                         'subtotal' => $totals['subtotal'],
@@ -74,6 +85,7 @@ class QuotationController extends Controller
                         description: 'تم إنشاء عرض السعر رقم ' . $quotation->quotation_number,
                         newValues: $quotation->only([
                             'client_id',
+                            'lead_id',
                             'quotation_number',
                             'subtotal',
                             'vat',
@@ -105,6 +117,7 @@ class QuotationController extends Controller
 
         $quotation->load([
             'client',
+            'lead',
             'user',
             'items.service',
             'sale.payments',
@@ -125,6 +138,17 @@ class QuotationController extends Controller
             ->orderBy('name')
             ->get();
 
+        $leads = Lead::query()
+            ->where(function ($query) use ($quotation) {
+                $query->where('status', '!=', 'converted');
+
+                if ($quotation->lead_id) {
+                    $query->orWhere('id', $quotation->lead_id);
+                }
+            })
+            ->orderBy('name')
+            ->get();
+
         $services = Service::query()
             ->where('status', true)
             ->orderBy('name')
@@ -133,6 +157,7 @@ class QuotationController extends Controller
         return view('admin.quotations.edit', compact(
             'quotation',
             'clients',
+            'leads',
             'services'
         ));
     }
@@ -148,6 +173,7 @@ class QuotationController extends Controller
         DB::transaction(function () use ($quotation, $data) {
             $oldValues = $quotation->only([
                 'client_id',
+                'lead_id',
                 'subtotal',
                 'vat',
                 'total',
@@ -160,7 +186,8 @@ class QuotationController extends Controller
             $totals = $this->calculateTotals($data);
 
             $quotation->update([
-                'client_id' => $data['client_id'],
+                'client_id' => $data['client_id'] ?? null,
+                'lead_id' => $data['lead_id'] ?? null,
                 'subtotal' => $totals['subtotal'],
                 'vat' => $totals['vat'],
                 'total' => $totals['total'],
@@ -180,6 +207,7 @@ class QuotationController extends Controller
                 oldValues: $oldValues,
                 newValues: $quotation->only([
                     'client_id',
+                    'lead_id',
                     'subtotal',
                     'vat',
                     'total',
@@ -260,8 +288,9 @@ class QuotationController extends Controller
 
     private function validateQuotation(Request $request): array
     {
-        return $request->validate([
-            'client_id' => ['required', 'exists:clients,id'],
+        $data = $request->validate([
+            'client_id' => ['nullable', 'exists:clients,id'],
+            'lead_id' => ['nullable', 'exists:leads,id'],
             'quotation_date' => ['nullable', 'date'],
             'valid_until' => ['nullable', 'date', 'after_or_equal:quotation_date'],
             'vat' => ['nullable', 'numeric', 'min:0'],
@@ -279,13 +308,30 @@ class QuotationController extends Controller
             'item_notes' => ['nullable', 'array'],
             'item_notes.*' => ['nullable', 'string'],
         ], [
-            'client_id.required' => 'يجب اختيار العميل',
             'service_id.required' => 'يجب إضافة خدمة واحدة على الأقل',
             'service_id.*.required' => 'يجب اختيار الخدمة',
             'quantity.*.required' => 'الكمية مطلوبة',
             'unit_price.*.required' => 'سعر الخدمة مطلوب',
             'valid_until.after_or_equal' => 'تاريخ انتهاء العرض يجب أن يكون بعد أو يساوي تاريخ العرض',
         ]);
+
+        $hasClient = ! empty($data['client_id']);
+        $hasLead = ! empty($data['lead_id']);
+
+        if (! $hasClient && ! $hasLead) {
+            throw ValidationException::withMessages([
+                'client_id' => 'يجب اختيار عميل أو Lead لعرض السعر',
+            ]);
+        }
+
+        if ($hasClient && $hasLead) {
+            throw ValidationException::withMessages([
+                'client_id' => 'لا يمكن ربط عرض السعر بعميل و Lead في نفس الوقت',
+                'lead_id' => 'لا يمكن ربط عرض السعر بعميل و Lead في نفس الوقت',
+            ]);
+        }
+
+        return $data;
     }
     public function pdf(Quotation $quotation)
     {
@@ -293,6 +339,7 @@ class QuotationController extends Controller
 
         $quotation->load([
             'client',
+            'lead',
             'user',
             'items.service',
             'sale.payments',

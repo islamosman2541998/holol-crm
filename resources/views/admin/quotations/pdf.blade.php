@@ -394,37 +394,41 @@
             </table>
         </div>
 
+        @php
+            $contact = $quotation->client ?? $quotation->lead;
+        @endphp
+
         <div class="content">
             <table class="info-wrapper">
                 <tr>
                     <td class="right-col">
                         <div class="info-card">
-                            <div class="info-card-title">بيانات العميل</div>
+                            <div class="info-card-title">{{ $quotation->client ? 'بيانات العميل' : 'بيانات Lead' }}</div>
 
                             <table class="details-table">
                                 <tr>
                                     <td class="label-cell">الاسم</td>
-                                    <td class="value-cell">{{ $quotation->client?->name ?? '-' }}</td>
+                                    <td class="value-cell">{{ $contact?->name ?? '-' }}</td>
                                 </tr>
 
                                 <tr>
                                     <td class="label-cell">الشركة</td>
-                                    <td class="value-cell">{{ $quotation->client?->company ?? '-' }}</td>
+                                    <td class="value-cell">{{ $contact?->company ?? '-' }}</td>
                                 </tr>
 
                                 <tr>
                                     <td class="label-cell">الموبايل</td>
-                                    <td class="value-cell">{{ $quotation->client?->mobile ?? '-' }}</td>
+                                    <td class="value-cell">{{ $contact?->mobile ?? '-' }}</td>
                                 </tr>
 
                                 <tr>
                                     <td class="label-cell">الهاتف</td>
-                                    <td class="value-cell">{{ $quotation->client?->phone ?? '-' }}</td>
+                                    <td class="value-cell">{{ $contact?->phone ?? '-' }}</td>
                                 </tr>
 
                                 <tr>
                                     <td class="label-cell">البريد الإلكتروني</td>
-                                    <td class="value-cell">{{ $quotation->client?->email ?? '-' }}</td>
+                                    <td class="value-cell">{{ $contact?->email ?? '-' }}</td>
                                 </tr>
                             </table>
                         </div>

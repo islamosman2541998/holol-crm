@@ -90,13 +90,15 @@ class QuotationReportExport extends DefaultValueBinder implements
 
         $remainingAmount = max($saleTotal - $paidAmount, 0);
 
+        $contact = $quotation->client ?? $quotation->lead;
+
         return [
             $quotation->quotation_number,
-            $quotation->client?->name,
-            $quotation->client?->company,
-            $this->normalizePhone($quotation->client?->mobile),
-            $this->normalizePhone($quotation->client?->phone),
-            $quotation->client?->email,
+            $contact?->name,
+            $contact?->company,
+            $this->normalizePhone($contact?->mobile),
+            $this->normalizePhone($contact?->phone),
+            $contact?->email,
             $quotation->user?->name,
             $services,
             (float) $quotation->subtotal,
@@ -141,6 +143,7 @@ class QuotationReportExport extends DefaultValueBinder implements
         $query = Quotation::query()
             ->with([
                 'client',
+                'lead',
                 'user',
                 'items.service',
                 'sale.payments',

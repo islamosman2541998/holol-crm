@@ -35,7 +35,7 @@ class QuotationIndex extends Component
     public function render()
     {
         $quotations = Quotation::query()
-            ->with(['client', 'user', 'sale']);
+            ->with(['client', 'lead', 'user', 'sale']);
 
         $this->applyOwnedRecordScope($quotations, 'quotations.view_all', 'user_id');
 

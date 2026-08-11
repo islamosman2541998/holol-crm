@@ -26,6 +26,8 @@ class LeadController extends Controller
         $lead->load([
             'assignedUser',
             'convertedClient',
+            'openQuotations.items.service',
+            'openQuotations.sale.payments',
         ]);
 
         return view('admin.leads.show', compact('lead'));
@@ -120,6 +122,11 @@ class LeadController extends Controller
                 'status' => 'converted',
                 'converted_client_id' => $client->id,
                 'converted_at' => now(),
+            ]);
+
+            $lead->quotations()->update([
+                'client_id' => $client->id,
+                'lead_id' => null,
             ]);
 
             // نخفي الـ Lead من قائمة العملاء المحتملين

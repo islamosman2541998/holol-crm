@@ -50,6 +50,7 @@ class SaleController extends Controller
 
         $quotations = Quotation::query()
             ->with(['client', 'items.service'])
+            ->whereNotNull('client_id')
             ->where('status', 'open')
             ->whereDoesntHave('sale')
             ->latest()
@@ -151,7 +152,8 @@ class SaleController extends Controller
             ->with(['client', 'items.service'])
             ->where(function ($query) use ($sale) {
                 $query->where(function ($query) {
-                    $query->where('status', 'open')
+                    $query->whereNotNull('client_id')
+                        ->where('status', 'open')
                         ->whereDoesntHave('sale');
                 });
 
@@ -283,6 +285,12 @@ class SaleController extends Controller
         if ($quotation->status !== 'open' && (int) $quotation->id !== (int) $sale?->quotation_id) {
             throw ValidationException::withMessages([
                 'quotation_id' => 'عرض السعر المختار ليس مفتوحًا ولا يمكن استخدامه في البيع',
+            ]);
+        }
+
+        if (! $quotation->client_id) {
+            throw ValidationException::withMessages([
+                'quotation_id' => 'عرض السعر ده مرتبط بـ Lead مش عميل، لازم تحول الـ Lead لعميل الأول',
             ]);
         }
 

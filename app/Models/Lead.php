@@ -71,6 +71,15 @@ public function assignedMember()
 {
     return $this->hasOne(Member::class, 'user_id', 'assigned_to');
 }
+public function quotations()
+{
+    return $this->hasMany(Quotation::class);
+}
+public function openQuotations()
+{
+    return $this->hasMany(Quotation::class)
+        ->where('status', 'open');
+}
 public function getStatusBadgeClassAttribute(): string
     {
         return match ($this->status) {

@@ -17,8 +17,10 @@
                 @include('admin.quotations.partials.form', [
                     'quotation' => null,
                     'clients' => $clients,
+                    'leads' => $leads,
                     'services' => $services,
                     'selectedClientId' => $selectedClientId ?? null,
+                    'selectedLeadId' => $selectedLeadId ?? null,
                 ])
             </div>
 

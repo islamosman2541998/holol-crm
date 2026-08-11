@@ -38,6 +38,13 @@
 
                 <div class="dropdown-divider"></div>
 
+                <a href="{{ route('admin.profile.edit') }}" class="dropdown-item d-flex align-items-center gap-2">
+                    <i class="bi bi-person"></i>
+                    الملف الشخصي
+                </a>
+
+                <div class="dropdown-divider"></div>
+
                 <form method="POST" action="{{ route('admin.logout') }}">
                     @csrf
                     <button type="submit" class="dropdown-item user-dropdown-logout">

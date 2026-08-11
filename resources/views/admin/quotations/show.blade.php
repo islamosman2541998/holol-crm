@@ -12,10 +12,15 @@
             </h4>
 
             <div class="text-muted">
-                العميل:
                 @if ($quotation->client)
+                    العميل:
                     <a href="{{ route('admin.clients.show', $quotation->client) }}">
                         {{ $quotation->client->name }}
+                    </a>
+                @elseif ($quotation->lead)
+                    Lead:
+                    <a href="{{ route('admin.leads.show', $quotation->lead) }}">
+                        {{ $quotation->lead->name }}
                     </a>
                 @else
                     -
@@ -41,7 +46,7 @@
                 <i class="bi bi-file-earmark-pdf"></i>
                 PDF
             </a>
-            @if ($quotation->status === 'open' && !$quotation->sale)
+            @if ($quotation->status === 'open' && !$quotation->sale && $quotation->client)
                 @can('sales.create')
                     <a href="{{ route('admin.sales.create', ['quotation_id' => $quotation->id]) }}" class="btn btn-success">
                         <i class="bi bi-cash-coin"></i>
@@ -75,7 +80,7 @@
                     </div>
 
                     <div class="client-info-item">
-                        <span>العميل</span>
+                        <span>{{ $quotation->client ? 'العميل' : 'Lead' }}</span>
                         <strong>
                             @if ($quotation->client)
                                 <a href="{{ route('admin.clients.show', $quotation->client) }}">
@@ -84,6 +89,14 @@
 
                                 <div class="small text-muted mt-1">
                                     {{ $quotation->client->company ?? 'بدون شركة' }}
+                                </div>
+                            @elseif ($quotation->lead)
+                                <a href="{{ route('admin.leads.show', $quotation->lead) }}">
+                                    {{ $quotation->lead->name }}
+                                </a>
+
+                                <div class="small text-muted mt-1">
+                                    {{ $quotation->lead->company ?? 'بدون شركة' }}
                                 </div>
                             @else
                                 -

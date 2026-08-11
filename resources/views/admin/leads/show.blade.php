@@ -157,6 +157,82 @@
             <div class="mt-4">
                 <livewire:admin.leads.lead-followups :lead="$lead" />
             </div>
+
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-0">عروض الأسعار المفتوحة</h5>
+                        <div class="small text-muted mt-1">
+                            العروض المفتوحة فقط تظهر هنا ويمكن استخدامها في إنشاء عملية بيع بعد تحويل الـ Lead لعميل.
+                        </div>
+                    </div>
+
+                    @can('quotations.create')
+                        <a href="{{ route('admin.quotations.create', ['lead_id' => $lead->id]) }}"
+                            class="btn btn-sm btn-primary">
+                            <i class="bi bi-plus-circle"></i>
+                            عرض سعر جديد
+                        </a>
+                    @endcan
+                </div>
+
+                <div class="card-body">
+                    @forelse ($lead->openQuotations as $quotation)
+                        <div class="related-project-item">
+                            <div class="d-flex justify-content-between align-items-start gap-3">
+                                <div>
+                                    <h6 class="mb-1">
+                                        <a href="{{ route('admin.quotations.show', $quotation) }}">
+                                            {{ $quotation->quotation_number }}
+                                        </a>
+                                    </h6>
+
+                                    <div class="small text-muted">
+                                        تاريخ العرض:
+                                        {{ $quotation->quotation_date?->format('Y-m-d') ?? '-' }}
+
+                                        <span class="mx-2">|</span>
+
+                                        صالح حتى:
+                                        {{ $quotation->valid_until?->format('Y-m-d') ?? '-' }}
+                                    </div>
+
+                                    <div class="small text-muted mt-1">
+                                        الخدمات:
+                                        {{ $quotation->items->count() }}
+
+                                        <span class="mx-2">|</span>
+
+                                        الإجمالي:
+                                        <strong>{{ number_format($quotation->total, 2) }}</strong>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex flex-wrap gap-2 justify-content-end">
+                                    <span class="badge {{ $quotation->status_badge_class }}">
+                                        {{ $quotation->status_label }}
+                                    </span>
+
+                                    <a href="{{ route('admin.quotations.show', $quotation) }}"
+                                        class="btn btn-sm btn-outline-dark">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+
+                                    <a href="{{ route('admin.quotations.pdf', $quotation) }}"
+                                        class="btn btn-sm btn-outline-danger" target="_blank">
+                                        <i class="bi bi-file-earmark-pdf"></i>
+                                        PDF
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="text-center text-muted py-4">
+                            لا توجد عروض أسعار مفتوحة لهذا الـ Lead
+                        </div>
+                    @endforelse
+                </div>
+            </div>
         </div>
     </div>
     <div class="row g-4 mt-1">

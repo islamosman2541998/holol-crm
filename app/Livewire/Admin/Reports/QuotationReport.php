@@ -105,6 +105,7 @@ class QuotationReport extends Component
         $query = Quotation::query()
             ->with([
                 'client',
+                'lead',
                 'user',
                 'items.service',
                 'sale.payments',

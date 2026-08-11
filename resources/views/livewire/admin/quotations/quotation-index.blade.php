@@ -54,10 +54,17 @@
                                 </td>
 
                                 <td>
-                                    {{ $quotation->client?->name ?? '-' }}
-                                    <div class="small text-muted">
-                                        {{ $quotation->client?->company ?? '-' }}
-                                    </div>
+                                    @if ($quotation->client)
+                                        {{ $quotation->client->name }}
+                                        <div class="small text-muted">
+                                            {{ $quotation->client->company ?? '-' }}
+                                        </div>
+                                    @elseif ($quotation->lead)
+                                        {{ $quotation->lead->name }}
+                                        <span class="badge bg-light text-dark border">Lead</span>
+                                    @else
+                                        -
+                                    @endif
                                 </td>
 
                                 <td>{{ number_format($quotation->total, 2) }}</td>
