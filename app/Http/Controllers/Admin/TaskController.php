@@ -3,12 +3,16 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\TaskAssignedMail;
 use App\Models\Client;
 use App\Models\Lead;
 use App\Models\Member;
 use App\Models\Task;
 use App\Models\TaskAttachment;
+use App\Notifications\TaskAssignedNotification;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Project;
 
@@ -75,6 +79,8 @@ class TaskController extends Controller
 
         $task->assignedMembers()->sync($memberIds);
 
+        $this->notifyAssignedMembers($task, $memberIds);
+
         $task->logActivity(
             event: 'created',
             title: 'تم إنشاء المهمة',
@@ -108,6 +114,48 @@ class TaskController extends Controller
         abort_unless(Storage::disk('local')->exists($attachment->file_path), 404);
 
         return Storage::disk('local')->download($attachment->file_path, $attachment->file_name);
+    }
+
+    private function notifyAssignedMembers(Task $task, array $memberIds): void
+    {
+        if (empty($memberIds)) {
+            return;
+        }
+
+        $currentMemberId = auth()->user()?->member?->id;
+
+        $members = Member::query()
+            ->whereIn('id', $memberIds)
+            ->when($currentMemberId, function ($query) use ($currentMemberId) {
+                $query->where('id', '!=', $currentMemberId);
+            })
+            ->whereNotNull('user_id')
+            ->with('user')
+            ->get();
+
+        $assignedByName = auth()->user()->name;
+
+        foreach ($members as $member) {
+            if (! $member->user) {
+                continue;
+            }
+
+            $member->user->notify(new TaskAssignedNotification($task, $assignedByName));
+
+            if ($member->user->email) {
+                try {
+                    Mail::to($member->user->email)
+                        ->send(new TaskAssignedMail($member->user, $task, $assignedByName));
+                } catch (\Throwable $e) {
+                    Log::error('Failed to send task assigned email', [
+                        'user_id' => $member->user->id,
+                        'email' => $member->user->email,
+                        'task_id' => $task->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+        }
     }
 
     private function authorizeTaskAccess(Task $task): void
@@ -238,9 +286,13 @@ class TaskController extends Controller
             $data['completed_at'] = null;
         }
 
+        $previousMemberIds = $task->assignedMembers()->pluck('members.id')->all();
+
         $task->update($data);
 
         $task->assignedMembers()->sync($memberIds);
+
+        $this->notifyAssignedMembers($task, array_diff($memberIds, $previousMemberIds));
 
         $task->logActivity(
             event: 'updated',

@@ -11,6 +11,7 @@ use App\Models\LeadFollowup;
 use App\Models\Member;
 use App\Models\Task;
 use App\Models\Project;
+use App\Notifications\TaskAssignedNotification;
 use App\Traits\AuthorizesOwnedRecords;
 
 class DashboardController extends Controller
@@ -242,17 +243,41 @@ class DashboardController extends Controller
         $showTasksPopup = false;
         $popupTodayTasks = collect();
         $popupOverdueTasks = collect();
+        $popupAssignedTasks = collect();
 
-        if (session('show_tasks_popup') && $user->member) {
-            $showTasksPopup = true;
-            $popupTodayTasks = Task::query()->forMember($user->member->id)->dueToday()->get();
-            $popupOverdueTasks = Task::query()->forMember($user->member->id)->overdue()->get();
+        if ($user->member) {
+            if (session('show_tasks_popup')) {
+                $showTasksPopup = true;
+                $popupTodayTasks = Task::query()->forMember($user->member->id)->dueToday()->get();
+                $popupOverdueTasks = Task::query()->forMember($user->member->id)->overdue()->get();
+            }
+
+            $unreadAssignedNotifications = $user->unreadNotifications()
+                ->where('type', TaskAssignedNotification::class)
+                ->get();
+
+            if ($unreadAssignedNotifications->isNotEmpty()) {
+                $showTasksPopup = true;
+
+                $assignedTaskIds = $unreadAssignedNotifications
+                    ->pluck('data.task_id')
+                    ->filter()
+                    ->unique();
+
+                $popupAssignedTasks = Task::query()
+                    ->whereIn('id', $assignedTaskIds)
+                    ->with('creator')
+                    ->get();
+
+                $unreadAssignedNotifications->each->markAsRead();
+            }
         }
 
         return view('admin.dashboard', compact(
             'showTasksPopup',
             'popupTodayTasks',
             'popupOverdueTasks',
+            'popupAssignedTasks',
             'clientsCount',
             'newClientsCount',
             'activeClientsCount',

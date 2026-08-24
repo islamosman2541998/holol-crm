@@ -21,13 +21,24 @@
 
         <div class="notification-list">
             @forelse ($notifications as $notification)
-                <a href="{{ route('admin.tasks.index', ['dateFilter' => ($notification->data['overdue_count'] ?? 0) > 0 ? 'overdue' : 'today']) }}"
+                @php
+                    $isAssigned = $notification->type === \App\Notifications\TaskAssignedNotification::class;
+
+                    $notificationUrl = $isAssigned
+                        ? (isset($notification->data['task_id'])
+                            ? route('admin.tasks.show', $notification->data['task_id'])
+                            : route('admin.tasks.index'))
+                        : route('admin.tasks.index', ['dateFilter' => ($notification->data['overdue_count'] ?? 0) > 0 ? 'overdue' : 'today']);
+                @endphp
+                <a href="{{ $notificationUrl }}"
                    wire:click="markAsRead('{{ $notification->id }}')"
                    class="dropdown-item notification-item {{ is_null($notification->read_at) ? 'is-unread' : '' }}">
                     <div class="d-flex justify-content-between align-items-start gap-2">
                         <div>
                             <div class="small fw-semibold">
-                                @if (($notification->data['overdue_count'] ?? 0) > 0)
+                                @if ($isAssigned)
+                                    تم تسنيد مهمة لك: {{ $notification->data['title'] ?? '' }}
+                                @elseif (($notification->data['overdue_count'] ?? 0) > 0)
                                     عندك {{ $notification->data['overdue_count'] }} مهمة متأخرة
                                     @if (($notification->data['today_count'] ?? 0) > 0)
                                         و{{ $notification->data['today_count'] }} اليوم

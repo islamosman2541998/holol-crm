@@ -778,12 +778,29 @@
                     <div class="modal-header">
                         <h5 class="modal-title">
                             <i class="bi bi-bell text-primary"></i>
-                            مهامك اليوم
+                            تنبيهات المهام
                         </h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
                     </div>
 
                     <div class="modal-body">
+                        @if ($popupAssignedTasks->isNotEmpty())
+                            <div class="mb-3">
+                                <span class="badge bg-success mb-2">مهام جديدة اتسندت لك ({{ $popupAssignedTasks->count() }})</span>
+                                @foreach ($popupAssignedTasks as $task)
+                                    <a href="{{ route('admin.tasks.show', $task) }}" class="related-task-item d-block text-decoration-none text-reset">
+                                        <div class="fw-semibold small">{{ $task->title }}</div>
+                                        <div class="text-muted" style="font-size:12px;">
+                                            بواسطة: {{ $task->creator?->name ?? '-' }}
+                                            @if ($task->due_at)
+                                                - الموعد: {{ $task->due_at->format('Y-m-d H:i') }}
+                                            @endif
+                                        </div>
+                                    </a>
+                                @endforeach
+                            </div>
+                        @endif
+
                         @if ($popupOverdueTasks->isNotEmpty())
                             <div class="mb-3">
                                 <span class="badge bg-danger mb-2">مهام متأخرة ({{ $popupOverdueTasks->count() }})</span>
