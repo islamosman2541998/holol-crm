@@ -261,8 +261,21 @@
     </div>
 
     @can('tasks.view')
-        <div class="row g-4 mb-4">
-            <div class="col-md-3">
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-5 g-4 mb-4">
+            <div class="col">
+                <a href="{{ route('admin.tasks.index') }}"
+                   class="card border-0 shadow-sm small-stat-card stat-card-link">
+                    <div class="card-body">
+                        <div class="text-muted small mb-1">مهام جديدة</div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h4 class="mb-0">{{ $totalTasksCount ?? 0 }}</h4>
+                            <i class="bi bi-list-task fs-3 text-secondary"></i>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col">
                 <a href="{{ route('admin.tasks.index', ['dateFilter' => 'today']) }}"
                    class="card border-0 shadow-sm small-stat-card stat-card-link">
                     <div class="card-body">
@@ -275,7 +288,7 @@
                 </a>
             </div>
 
-            <div class="col-md-3">
+            <div class="col">
                 <a href="{{ route('admin.tasks.index', ['dateFilter' => 'overdue']) }}"
                    class="card border-0 shadow-sm small-stat-card stat-card-link">
                     <div class="card-body">
@@ -288,7 +301,7 @@
                 </a>
             </div>
 
-            <div class="col-md-3">
+            <div class="col">
                 <a href="{{ route('admin.tasks.index', ['status' => 'in_progress']) }}"
                    class="card border-0 shadow-sm small-stat-card stat-card-link">
                     <div class="card-body">
@@ -301,7 +314,7 @@
                 </a>
             </div>
 
-            <div class="col-md-3">
+            <div class="col">
                 <a href="{{ route('admin.tasks.index', ['status' => 'review']) }}"
                    class="card border-0 shadow-sm small-stat-card stat-card-link">
                     <div class="card-body">

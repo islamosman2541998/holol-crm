@@ -163,6 +163,8 @@ class DashboardController extends Controller
             }
         }
 
+        $totalTasksCount = (clone $taskQuery)->count();
+
         $todayTasksCount = (clone $taskQuery)
             ->whereDate('due_at', today())
             ->whereNotIn('status', ['completed', 'cancelled'])
@@ -300,6 +302,7 @@ class DashboardController extends Controller
             'overdueLeadFollowupsCount',
             'pendingLeadFollowupsCount',
             'latestLeadFollowups',
+            'totalTasksCount',
             'todayTasksCount',
             'overdueTasksCount',
             'inProgressTasksCount',
