@@ -37,7 +37,7 @@
                         <div>
                             <div class="small fw-semibold">
                                 @if ($isAssigned)
-                                    تم تسنيد مهمة لك: {{ $notification->data['title'] ?? '' }}
+                                    تم اسناد مهمة لك: {{ $notification->data['title'] ?? '' }}
                                 @elseif (($notification->data['overdue_count'] ?? 0) > 0)
                                     عندك {{ $notification->data['overdue_count'] }} مهمة متأخرة
                                     @if (($notification->data['today_count'] ?? 0) > 0)

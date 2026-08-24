@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>تم تسنيد مهمة لك</title>
+    <title>تم اسناد مهمة لك</title>
 </head>
 <body style="margin:0; padding:0; background-color:#f5f6fa; font-family: Tahoma, Arial, sans-serif;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f6fa; padding:24px 0;">
@@ -23,7 +23,7 @@
                                 @if ($assignedByName)
                                     {{ $assignedByName }} سند لك مهمة جديدة.
                                 @else
-                                    تم تسنيد مهمة جديدة لك.
+                                    تم اسناد مهمة جديدة لك.
                                 @endif
                             </p>
 

@@ -22,7 +22,7 @@ class TaskAssignedMail extends Mailable
     public function build(): self
     {
         return $this
-            ->subject('تم تسنيد مهمة لك: ' . $this->task->title)
+            ->subject('تم اسناد مهمة لك: ' . $this->task->title)
             ->view('emails.task-assigned');
     }
 }
