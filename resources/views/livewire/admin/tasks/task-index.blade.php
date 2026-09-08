@@ -100,6 +100,8 @@
                             <th>مرتبطة بـ</th>
                             <th>الأولوية</th>
                             <th>الحالة</th>
+                            <th>تاريخ الانشاء</th>
+
                             <th>تاريخ التسليم</th>
                             <th>أنشئت بواسطة</th>
                             <th class="text-end">الإجراءات</th>
@@ -210,6 +212,8 @@
                                         </form>
                                     @endcan
                                 </td>
+                                  
+                                <td>{{ $task->created_at->format('Y-m-d H:i') }}</td>
 
                                 <td>
                                     @if ($task->due_at)
