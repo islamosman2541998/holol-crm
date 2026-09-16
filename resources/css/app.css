@@ -17,6 +17,7 @@
 
     --button-radius: 8px;
     --card-radius: 14px;
+    --system-font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
     --page-bg: #f5f6fa;
     --surface-bg: #ffffff;
@@ -36,8 +37,50 @@ html[data-bs-theme="dark"] {
 }
 
 body {
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-family: var(--system-font-family);
     background-color: var(--page-bg);
+}
+
+button,
+input,
+optgroup,
+select,
+textarea,
+.tooltip,
+.popover,
+.toast {
+    font-family: var(--system-font-family);
+}
+
+.font-choice {
+    position: relative;
+}
+
+.font-choice input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.font-choice label {
+    display: block;
+    min-height: 112px;
+    padding: 1rem;
+    cursor: pointer;
+    background: var(--surface-bg);
+    border: 2px solid var(--surface-border);
+    border-radius: var(--card-radius);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.font-choice input:checked + label {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 18%, transparent);
+}
+
+.font-choice input:focus-visible + label {
+    outline: 3px solid color-mix(in srgb, var(--primary-color) 30%, transparent);
+    outline-offset: 2px;
 }
 
 /* Bootstrap's .bg-white/.text-dark/.btn-outline-dark utilities are fixed, not

@@ -1,3 +1,9 @@
+@php
+    $fontOptions = config('system-fonts.options');
+    $defaultFont = config('system-fonts.default', 'cairo');
+    $selectedFont = setting('appearance.font_family', $defaultFont);
+    $systemFont = $fontOptions[$selectedFont] ?? $fontOptions[$defaultFont];
+@endphp
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 
@@ -16,8 +22,14 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="{{ $systemFont['stylesheet'] }}" rel="stylesheet">
+    @stack('styles')
+
     <style>
         :root {
+            --system-font-family: {!! $systemFont['family'] !!};
             --primary-color: {{ setting('appearance.primary_color', '#0d6efd') }};
             --secondary-color: {{ setting('appearance.secondary_color', '#6c757d') }};
             --sidebar-bg: {{ setting('appearance.sidebar_bg', '#111827') }};

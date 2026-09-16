@@ -34,6 +34,7 @@ class SettingsSeeder extends Seeder
             ['appearance', 'topbar_bg', '#ffffff', 'color'],
             ['appearance', 'button_radius', '8px', 'text'],
             ['appearance', 'card_radius', '14px', 'text'],
+            ['appearance', 'font_family', 'cairo', 'text'],
             ['login', 'card_bg', '#ffffff', 'color'],
             ['login', 'card_opacity', '1', 'text'],
         ];

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class SettingController extends Controller
 {
@@ -36,6 +37,7 @@ class SettingController extends Controller
             'topbar_bg' => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'button_radius' => ['nullable', 'string', 'regex:/^\d{1,3}(\.\d{1,2})?(px|rem|em|%)$/'],
             'card_radius' => ['nullable', 'string', 'regex:/^\d{1,3}(\.\d{1,2})?(px|rem|em|%)$/'],
+            'font_family' => ['required', 'string', Rule::in(array_keys(config('system-fonts.options', [])))],
 
             'system_logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:2048'],
             'favicon' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:1024'],
@@ -55,6 +57,8 @@ class SettingController extends Controller
             'card_bg.regex' => 'صيغة اللون غير صحيحة',
             'button_radius.regex' => 'صيغة الانحناء غير صحيحة (مثال: 8px)',
             'card_radius.regex' => 'صيغة الانحناء غير صحيحة (مثال: 14px)',
+            'font_family.required' => 'اختر خط النظام',
+            'font_family.in' => 'الخط المختار غير متاح',
         ]);
 
         $this->saveTextSettings($request);
@@ -94,6 +98,7 @@ class SettingController extends Controller
                 'topbar_bg',
                 'button_radius',
                 'card_radius',
+                'font_family',
             ],
         ];
 

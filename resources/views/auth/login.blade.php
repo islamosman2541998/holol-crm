@@ -13,6 +13,11 @@
     $b = hexdec(substr($hex, 4, 2));
 
     $cardBackground = "rgba({$r}, {$g}, {$b}, {$cardOpacity})";
+
+    $fontOptions = config('system-fonts.options');
+    $defaultFont = config('system-fonts.default', 'cairo');
+    $selectedFont = setting('appearance.font_family', $defaultFont);
+    $systemFont = $fontOptions[$selectedFont] ?? $fontOptions[$defaultFont];
 @endphp
 
 <!DOCTYPE html>
@@ -24,8 +29,13 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="{{ $systemFont['stylesheet'] }}" rel="stylesheet">
+
     <style>
         :root {
+            --system-font-family: {!! $systemFont['family'] !!};
             --primary-color: {{ setting('appearance.primary_color', '#0d6efd') }};
             --button-radius: {{ setting('appearance.button_radius', '8px') }};
             --card-radius: {{ setting('appearance.card_radius', '14px') }};

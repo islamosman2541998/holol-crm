@@ -3,6 +3,12 @@
 @section('title', 'الإعدادات')
 @section('page_title', 'إعدادات السيستم')
 
+@push('styles')
+    @foreach (config('system-fonts.options') as $font)
+        <link href="{{ $font['stylesheet'] }}" rel="stylesheet">
+    @endforeach
+@endpush
+
 @section('content')
 
 
@@ -163,6 +169,33 @@
 
                     <div class="tab-pane fade" id="appearance">
                         <div class="row g-4">
+                            @php
+                                $fontOptions = config('system-fonts.options');
+                                $selectedFont = old('font_family', setting('appearance.font_family', config('system-fonts.default', 'cairo')));
+                            @endphp
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">خط النظام</label>
+                                <p class="text-muted small mb-3">اختر الخط العربي الذي سيظهر في جميع صفحات النظام وصفحة تسجيل الدخول.</p>
+                                <div class="row g-3">
+                                    @foreach ($fontOptions as $fontKey => $font)
+                                        <div class="col-md-4">
+                                            <div class="font-choice">
+                                                <input type="radio" name="font_family" id="font-{{ $fontKey }}"
+                                                    value="{{ $fontKey }}" @checked($selectedFont === $fontKey)>
+                                                <label for="font-{{ $fontKey }}" style="font-family: {!! $font['family'] !!}">
+                                                    <span class="d-block fw-bold fs-5 mb-2">{{ $font['name'] }}</span>
+                                                    <span class="d-block">حلول لإدارة أعمالك بسهولة</span>
+                                                    <small class="text-muted">أبجد هوز ١٢٣٤٥٦</small>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                @error('font_family')
+                                    <div class="text-danger small mt-2">{{ $message }}</div>
+                                @enderror
+                            </div>
+
                             <div class="col-md-4">
                                 <label class="form-label">Primary Color</label>
                                 <input type="color" name="primary_color" class="form-control form-control-color"
