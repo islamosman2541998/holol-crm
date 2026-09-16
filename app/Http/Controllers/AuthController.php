@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Support\TaskReminders;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -10,10 +11,6 @@ class AuthController extends Controller
 {
     public function showLogin()
     {
-        if (Auth::check()) {
-            return redirect()->route('admin.dashboard');
-        }
-
         return view('auth.login');
     }
 
@@ -63,7 +60,9 @@ class AuthController extends Controller
             $request->session()->flash('show_tasks_popup', true);
         }
 
-        return redirect()->intended(route('admin.dashboard'));
+        $request->session()->forget('url.intended');
+
+        return redirect()->route($this->landingRouteFor($user));
     }
 
     public function logout(Request $request)
@@ -74,5 +73,29 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('login');
+    }
+
+    private function landingRouteFor(User $user): string
+    {
+        $destinations = [
+            'dashboard.view' => 'admin.dashboard',
+            'tasks.view' => 'admin.tasks.index',
+            'projects.view' => 'admin.projects.index',
+            'clients.view' => 'admin.clients.index',
+            'leads.view' => 'admin.leads.index',
+            'quotations.view' => 'admin.quotations.index',
+            'sales.view' => 'admin.sales.index',
+            'payments.view' => 'admin.payments.index',
+            'followups.view' => 'admin.followups.index',
+            'reports.view' => 'admin.reports.clients',
+        ];
+
+        foreach ($destinations as $permission => $route) {
+            if ($user->can($permission)) {
+                return $route;
+            }
+        }
+
+        return 'admin.profile.edit';
     }
 }
