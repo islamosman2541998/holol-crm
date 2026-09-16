@@ -46,8 +46,11 @@ class DashboardController extends Controller
             ->where('status', 'qualified')
             ->count();
 
-        $convertedLeadsCount = (clone $leadQuery)
-            ->where('status', 'converted')
+        $convertedLeadQuery = Lead::withTrashed()
+            ->whereNotNull('converted_client_id');
+        $this->applyOwnedRecordScope($convertedLeadQuery, 'leads.view_all', 'assigned_to');
+
+        $convertedLeadsCount = $convertedLeadQuery
             ->count();
 
         $followupQuery = ClientFollowup::query()
@@ -56,7 +59,9 @@ class DashboardController extends Controller
             });
 
         $todayFollowupsCount = (clone $followupQuery)
+            ->where('status', 'pending')
             ->whereDate('next_followup_at', today())
+            ->where('next_followup_at', '>=', now())
             ->count();
 
         $overdueFollowupsCount = (clone $followupQuery)
@@ -78,6 +83,7 @@ class DashboardController extends Controller
 
         $paymentsTotal = Payment::query()
             ->whereHas('sale', function ($query) {
+                $query->where('status', '!=', 'cancelled');
                 $this->applyOwnedRecordScope($query, 'sales.view_all', 'user_id');
             })
             ->sum('amount');
@@ -120,7 +126,9 @@ class DashboardController extends Controller
             });
 
         $todayLeadFollowupsCount = (clone $leadFollowupQuery)
+            ->where('status', 'pending')
             ->whereDate('next_followup_at', today())
+            ->where('next_followup_at', '>=', now())
             ->count();
 
         $overdueLeadFollowupsCount = (clone $leadFollowupQuery)
@@ -166,8 +174,7 @@ class DashboardController extends Controller
         $totalTasksCount = (clone $taskQuery)->count();
 
         $todayTasksCount = (clone $taskQuery)
-            ->whereDate('due_at', today())
-            ->whereNotIn('status', ['completed', 'cancelled'])
+            ->dueToday()
             ->count();
 
         $overdueTasksCount = (clone $taskQuery)
@@ -237,7 +244,13 @@ class DashboardController extends Controller
 
         $latestProjects = (clone $projectQuery)
             ->with(['client', 'service', 'team', 'manager'])
-            ->withCount(['tasks', 'openTasks'])
+            ->withCount([
+                'tasks',
+                'openTasks',
+                'completedTasks',
+                'milestones',
+                'completedMilestones',
+            ])
             ->latest()
             ->limit(6)
             ->get();

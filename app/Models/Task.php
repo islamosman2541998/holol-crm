@@ -114,7 +114,7 @@ public function project()
 
     public function scopeDueToday($query)
     {
-        return $query->whereDate('due_at', today())
+        return $query->whereBetween('due_at', [now(), today()->endOfDay()])
             ->whereNotIn('status', ['completed', 'cancelled']);
     }
 

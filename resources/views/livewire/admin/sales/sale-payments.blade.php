@@ -1,5 +1,5 @@
 <div>
-    @can('sales.edit')
+    @can('payments.create')
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white">
                 <h5 class="mb-0">إضافة دفعة</h5>
@@ -106,11 +106,12 @@
                                     <td>{{ $payment->user?->name ?? '-' }}</td>
                                     <td>{{ $payment->notes ?? '-' }}</td>
                                     <td class="text-end">
-                                        @can('sales.edit')
+                                        @can('payments.delete')
                                             <button type="button"
                                                     class="btn btn-sm btn-outline-danger"
-                                                    onclick="confirmDeletePayment({{ $payment->id }})">
-                                                <i class="bi bi-trash"></i>
+                                                    title="عكس الدفعة محاسبيًا"
+                                                    onclick="confirmReversePayment({{ $payment->id }})">
+                                                <i class="bi bi-arrow-counterclockwise"></i>
                                             </button>
                                         @endcan
                                     </td>
@@ -127,21 +128,64 @@
         </div>
     </div>
 
+    @if ($reversedPayments->isNotEmpty())
+        <div class="card border-danger-subtle shadow-sm mt-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0 text-danger">سجل الدفعات المعكوسة</h5>
+            </div>
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>القيمة</th>
+                            <th>تاريخ الدفع</th>
+                            <th>عكسها</th>
+                            <th>تاريخ العكس</th>
+                            <th>السبب</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($reversedPayments as $payment)
+                            <tr>
+                                <td>{{ number_format($payment->reversal?->amount ?? $payment->amount, 2) }}</td>
+                                <td>{{ $payment->paid_at?->format('Y-m-d') ?? '-' }}</td>
+                                <td>{{ $payment->reversal?->user?->name ?? '-' }}</td>
+                                <td>{{ $payment->reversal?->reversed_at?->format('Y-m-d H:i') ?? '-' }}</td>
+                                <td class="text-wrap">{{ $payment->reversal?->reason ?? '-' }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
+
     <script>
-        function confirmDeletePayment(id) {
+        function confirmReversePayment(id) {
             Swal.fire({
-                title: 'هل أنت متأكد؟',
-                text: 'سيتم حذف الدفعة وإعادة حساب حالة البيع',
+                title: 'عكس الدفعة محاسبيًا',
+                text: 'ستُستبعد الدفعة من التحصيل مع الاحتفاظ بسجل كامل للعملية.',
                 icon: 'warning',
+                input: 'textarea',
+                inputLabel: 'سبب عكس الدفعة',
+                inputPlaceholder: 'اكتب سببًا واضحًا...',
+                inputAttributes: {
+                    maxlength: 1000,
+                },
                 showCancelButton: true,
-                confirmButtonText: 'نعم، احذف',
+                confirmButtonText: 'تأكيد العكس',
                 cancelButtonText: 'إلغاء',
                 confirmButtonColor: '#dc3545',
                 cancelButtonColor: '#6c757d',
                 reverseButtons: true,
+                inputValidator: (value) => {
+                    if (!value || value.trim().length < 5) {
+                        return 'اكتب سببًا واضحًا لا يقل عن 5 أحرف';
+                    }
+                },
             }).then((result) => {
                 if (result.isConfirmed) {
-                    @this.call('delete', id);
+                    @this.call('reverse', id, result.value.trim());
                 }
             });
         }

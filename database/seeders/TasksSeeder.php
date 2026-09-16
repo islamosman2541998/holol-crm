@@ -20,11 +20,13 @@ class TasksSeeder extends Seeder
 
         if ($members->isEmpty()) {
             $this->command->warn('No members found. Please run MembersSeeder first.');
+
             return;
         }
 
         if ($users->isEmpty()) {
             $this->command->warn('No active users found.');
+
             return;
         }
 
@@ -73,11 +75,8 @@ class TasksSeeder extends Seeder
             $lead = $leads->isNotEmpty() ? $leads[$index % $leads->count()] : null;
             $user = $users[$index % $users->count()];
 
-            Task::query()->updateOrCreate(
-                [
-                    'title' => $taskData['title'],
-                    'assigned_member_id' => $member->id,
-                ],
+            $task = Task::query()->updateOrCreate(
+                ['title' => $taskData['title']],
                 [
                     ...$taskData,
                     'created_by' => $user->id,
@@ -86,6 +85,8 @@ class TasksSeeder extends Seeder
                     'completed_at' => $taskData['status'] === 'completed' ? now() : null,
                 ]
             );
+
+            $task->assignedMembers()->sync([$member->id]);
         }
     }
 }

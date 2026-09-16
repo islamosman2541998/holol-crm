@@ -65,6 +65,11 @@ class Quotation extends Model
         return $this->hasOne(Sale::class);
     }
 
+    public function saleWithTrashed()
+    {
+        return $this->hasOne(Sale::class)->withTrashed();
+    }
+
     public function getStatusLabelAttribute(): string
     {
         return match ($this->status) {
@@ -89,7 +94,7 @@ class Quotation extends Model
 
     public function getCanBeUsedInSaleAttribute(): bool
     {
-        return $this->status === 'open' && ! $this->sale()->exists();
+        return $this->status === 'open' && ! $this->saleWithTrashed()->exists();
     }
 
     public function markAsOpen(): void

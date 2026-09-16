@@ -210,11 +210,15 @@ class ClientReport extends Component
 
         $clientIds = (clone $query)->pluck('id');
 
-        $salesTotal = (float) Sale::query()->whereIn('client_id', $clientIds)->sum('total');
+        $salesTotal = (float) Sale::query()
+            ->whereIn('client_id', $clientIds)
+            ->where('status', '!=', 'cancelled')
+            ->sum('total');
 
         $paidTotal = (float) Payment::query()
             ->whereHas('sale', function ($query) use ($clientIds) {
-                $query->whereIn('client_id', $clientIds);
+                $query->whereIn('client_id', $clientIds)
+                    ->where('status', '!=', 'cancelled');
             })
             ->sum('amount');
 

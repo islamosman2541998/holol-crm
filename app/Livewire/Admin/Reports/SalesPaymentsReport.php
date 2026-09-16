@@ -216,9 +216,10 @@ class SalesPaymentsReport extends Component
             ->groupBy('status')
             ->pluck('aggregate', 'status');
 
-        $salesTotal = (float) (clone $query)->sum('total');
+        $revenueQuery = (clone $query)->where('status', '!=', 'cancelled');
+        $salesTotal = (float) (clone $revenueQuery)->sum('total');
 
-        $saleIds = (clone $query)->pluck('id');
+        $saleIds = $revenueQuery->pluck('id');
 
         $paymentsQuery = Payment::query()
             ->whereIn('sale_id', $saleIds)

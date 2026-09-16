@@ -90,9 +90,9 @@
             <h5 class="mb-0">قائمة المهام</h5>
         </div>
 
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table align-middle">
+        <div class="card-body p-0">
+            <div class="table-responsive task-table-responsive">
+                <table class="table table-hover align-middle mb-0 task-table">
                     <thead>
                         <tr>
                             <th>المهمة</th>
@@ -111,55 +111,49 @@
                     <tbody>
                         @forelse ($tasks as $task)
                             <tr @class(['table-warning' => $task->is_overdue])>
-                                <td>
-                                    <div class="fw-semibold">{{ $task->title }}</div>
-
-                                    @if ($task->description)
-                                        <div class="small text-muted">
-                                            {{ str($task->description)->limit(70) }}
-                                        </div>
-                                    @endif
-
+                                <td class="task-title-cell">
+                                    <div class="d-flex align-items-center gap-2 text-nowrap">
+                                        <a href="{{ route('admin.tasks.show', $task) }}" class="task-title-link"
+                                            title="{{ $task->title }}">
+                                            {{ $task->title }}
+                                        </a>
                                     @if ($task->is_overdue)
-                                        <div class="small text-danger mt-1">
+                                        <span class="task-overdue-label">
                                             <i class="bi bi-exclamation-triangle"></i>
                                             متأخرة
-                                        </div>
+                                        </span>
                                     @endif
+                                    </div>
                                 </td>
 
-                                <td>
+                                <td class="text-nowrap">
                                     @forelse ($task->assignedMembers as $assignedMember)
-                                        <div>
+                                        <span class="task-assignee">
                                             {{ $assignedMember->name }}
-                                            <span class="small text-muted">
+                                            <small class="text-muted">
                                                 {{ $assignedMember->team?->name ? '- ' . $assignedMember->team->name : '' }}
-                                            </span>
-                                        </div>
+                                            </small>
+                                        </span>@if (! $loop->last)<span class="text-muted mx-1">،</span>@endif
                                     @empty
                                         -
                                     @endforelse
                                 </td>
 
-                                <td>
+                                <td class="text-nowrap">
                                     @if ($task->project)
-                                        <div>
+                                        <div class="d-flex align-items-center gap-2 text-nowrap">
                                             <span class="badge bg-light text-dark border">مشروع</span>
                                             <a href="{{ route('admin.projects.show', $task->project) }}"
                                                 class="text-decoration-none">
                                                 {{ $task->project->name }}
                                             </a>
-                                        </div>
-
-                                        <div class="small text-muted mt-1">
-                                            العميل:
                                             @if ($task->project->client)
+                                                <span class="text-muted">•</span>
+                                                <span class="small text-muted">العميل:</span>
                                                 <a href="{{ route('admin.clients.show', $task->project->client) }}"
-                                                    class="text-decoration-none">
+                                                    class="text-decoration-none small">
                                                     {{ $task->project->client->name }}
                                                 </a>
-                                            @else
-                                                -
                                             @endif
                                         </div>
                                     @elseif ($task->client)
@@ -183,20 +177,20 @@
                                     @endif
                                 </td>
 
-                                <td>
+                                <td class="text-nowrap">
                                     <span class="badge {{ $task->priority_badge_class }}">
                                         {{ $task->priority_label }}
                                     </span>
                                 </td>
 
-                                <td>
-                                    <span class="badge {{ $task->status_badge_class }}">
-                                        {{ $task->status_label }}
-                                    </span>
-
+                                <td class="text-nowrap">
+                                    <div class="d-flex align-items-center gap-2 flex-nowrap">
+                                        <span class="badge {{ $task->status_badge_class }}">
+                                            {{ $task->status_label }}
+                                        </span>
                                     @can('tasks.change_status')
                                         <form action="{{ route('admin.tasks.change-status', $task) }}" method="POST"
-                                            class="mt-2">
+                                            class="task-status-form">
                                             @csrf
                                             @method('PATCH')
 
@@ -211,37 +205,39 @@
                                             </select>
                                         </form>
                                     @endcan
+                                    </div>
                                 </td>
                                   
-                                <td>{{ $task->created_at->format('Y-m-d H:i') }}</td>
+                                <td class="text-nowrap task-date-cell">{{ $task->created_at->format('Y-m-d H:i') }}</td>
 
-                                <td>
+                                <td class="text-nowrap task-date-cell">
                                     @if ($task->due_at)
-                                        <div>{{ $task->due_at->format('Y-m-d H:i') }}</div>
+                                        <span>{{ $task->due_at->format('Y-m-d H:i') }}</span>
 
                                         @if ($task->completed_at)
-                                            <div class="small text-success">
+                                            <span class="small text-success ms-2">
                                                 تمت: {{ $task->completed_at->format('Y-m-d H:i') }}
-                                            </div>
+                                            </span>
                                         @endif
                                     @else
                                         -
                                     @endif
                                 </td>
 
-                                <td>
+                                <td class="text-nowrap">
                                     {{ $task->creator?->name ?? 'System' }}
                                 </td>
 
-                                <td class="text-end">
+                                <td class="text-end text-nowrap">
+                                    <div class="task-actions">
                                     <a href="{{ route('admin.tasks.show', $task) }}"
-                                        class="btn btn-sm btn-outline-dark">
+                                        class="btn btn-sm btn-outline-dark" title="عرض المهمة" aria-label="عرض المهمة">
                                         <i class="bi bi-eye"></i>
                                     </a>
 
                                     @can('tasks.edit')
                                         <a href="{{ route('admin.tasks.edit', $task) }}"
-                                            class="btn btn-sm btn-outline-primary">
+                                            class="btn btn-sm btn-outline-primary" title="تعديل المهمة" aria-label="تعديل المهمة">
                                             <i class="bi bi-pencil"></i>
                                         </a>
                                     @endcan
@@ -252,16 +248,18 @@
                                             @csrf
                                             @method('DELETE')
 
-                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="حذف المهمة"
+                                                aria-label="حذف المهمة">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </form>
                                     @endcan
+                                    </div>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center text-muted py-4">
+                                <td colspan="9" class="text-center text-muted py-5">
                                     لا توجد مهام حتى الآن
                                 </td>
                             </tr>
@@ -270,7 +268,7 @@
                 </table>
             </div>
 
-            <div class="mt-3">
+            <div class="p-3 border-top">
                 {{ $tasks->links() }}
             </div>
         </div>

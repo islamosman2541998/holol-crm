@@ -86,6 +86,15 @@ class ClientController extends Controller
     {
         $this->authorizeOwnedRecordAccess('clients.view_all', $client->assigned_to);
 
+        if (
+            $client->sales()->exists()
+            || $client->projects()->exists()
+            || $client->quotations()->exists()
+            || $client->tasks()->exists()
+        ) {
+            return back()->with('error', 'لا يمكن حذف عميل له مبيعات أو عروض أسعار أو مشروعات أو مهام. يمكن تغيير حالته إلى غير نشط.');
+        }
+
         $client->delete();
 
         return redirect()

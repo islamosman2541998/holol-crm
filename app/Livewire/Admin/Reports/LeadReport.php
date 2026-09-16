@@ -123,11 +123,17 @@ class LeadReport extends Component
         ];
     }
 
-    private function leadsQuery()
+    private function leadsQuery(bool $includeConvertedInStats = false)
     {
         $query = Lead::query();
 
-        if (
+        if ($includeConvertedInStats && $this->trashedState === 'without') {
+            $query->withTrashed()
+                ->where(function ($query) {
+                    $query->whereNull('deleted_at')
+                        ->orWhereNotNull('converted_client_id');
+                });
+        } elseif (
             $this->trashedState === 'with' ||
             $this->status === 'converted' ||
             $this->conversionState === 'converted'
@@ -265,7 +271,7 @@ class LeadReport extends Component
     {
         $query = $this->leadsQuery();
 
-        $stats = $this->buildStats(clone $query);
+        $stats = $this->buildStats($this->leadsQuery(true));
 
         $leads = $query
             ->with([

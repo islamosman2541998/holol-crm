@@ -29,65 +29,6 @@
             @endcan
         </div>
     </div>
-    @can('payments.create')
-        @if (!in_array($sale->status, ['paid', 'cancelled']) && $sale->remaining_amount > 0)
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0">إضافة دفعة جديدة</h5>
-                </div>
-
-                <form method="POST" action="{{ route('admin.sales.payments.store', $sale) }}">
-                    @csrf
-
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-md-3">
-                                <label class="form-label">المبلغ المتبقي</label>
-                                <div class="form-control bg-light">
-                                    {{ number_format($sale->remaining_amount, 2) }}
-                                </div>
-                            </div>
-
-                            <div class="col-md-3">
-                                <label class="form-label">مبلغ الدفعة</label>
-                                <input type="number" step="0.01" min="1" max="{{ $sale->remaining_amount }}"
-                                    name="amount" class="form-control" value="{{ old('amount') }}">
-                            </div>
-
-                            <div class="col-md-3">
-                                <label class="form-label">طريقة الدفع</label>
-                                <select name="payment_method" class="form-select">
-                                    <option value="cash" @selected(old('payment_method', 'cash') === 'cash')>كاش</option>
-                                    <option value="bank_transfer" @selected(old('payment_method') === 'bank_transfer')>تحويل بنكي</option>
-                                    <option value="instapay" @selected(old('payment_method') === 'instapay')>InstaPay</option>
-                                    <option value="vodafone_cash" @selected(old('payment_method') === 'vodafone_cash')>Vodafone Cash</option>
-                                    <option value="other" @selected(old('payment_method') === 'other')>أخرى</option>
-                                </select>
-                            </div>
-
-                            <div class="col-md-3">
-                                <label class="form-label">تاريخ الدفع</label>
-                                <input type="date" name="paid_at" class="form-control"
-                                    value="{{ old('paid_at', now()->format('Y-m-d')) }}">
-                            </div>
-
-                            <div class="col-12">
-                                <label class="form-label">ملاحظات</label>
-                                <textarea name="notes" rows="2" class="form-control">{{ old('notes') }}</textarea>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card-footer bg-white d-flex justify-content-end">
-                        <button class="btn btn-primary">
-                            <i class="bi bi-cash-coin"></i>
-                            تسجيل الدفعة
-                        </button>
-                    </div>
-                </form>
-            </div>
-        @endif
-    @endcan
     <div class="row g-4">
         <div class="col-lg-4">
             <div class="card border-0 shadow-sm mb-4">

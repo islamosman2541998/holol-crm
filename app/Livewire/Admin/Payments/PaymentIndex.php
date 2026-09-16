@@ -5,18 +5,24 @@ namespace App\Livewire\Admin\Payments;
 use App\Models\Payment;
 use App\Models\Sale;
 use App\Models\User;
+use App\Services\PaymentService;
 use App\Traits\AuthorizesOwnedRecords;
+use Illuminate\Support\Facades\Validator;
 use Livewire\Component;
 use Livewire\WithPagination;
 
 class PaymentIndex extends Component
 {
-    use WithPagination, AuthorizesOwnedRecords;
+    use AuthorizesOwnedRecords, WithPagination;
 
     public string $search = '';
+
     public string $paymentMethod = '';
+
     public string $userId = '';
+
     public string $dateFrom = '';
+
     public string $dateTo = '';
 
     protected string $paginationTheme = 'bootstrap';
@@ -59,7 +65,7 @@ class PaymentIndex extends Component
         $this->resetPage();
     }
 
-    public function delete(int $paymentId): void
+    public function reverse(int $paymentId, string $reason, PaymentService $paymentService): void
     {
         abort_unless(auth()->user()->can('payments.delete'), 403);
 
@@ -69,43 +75,24 @@ class PaymentIndex extends Component
 
         $sale = $payment->sale;
 
-        if ($sale) {
-            $saleQuery = Sale::query()->whereKey($sale->id);
-            $this->applyOwnedRecordScope($saleQuery, 'sales.view_all', 'user_id');
-            abort_unless($saleQuery->exists(), 403);
-        }
+        abort_unless($sale, 404);
 
-        $payment->delete();
+        $saleQuery = Sale::query()->whereKey($sale->id);
+        $this->applyOwnedRecordScope($saleQuery, 'sales.view_all', 'user_id');
+        abort_unless($saleQuery->exists(), 403);
 
-        if ($sale) {
-            $this->refreshSaleStatus($sale);
-        }
+        $validated = Validator::make([
+            'reason' => $reason,
+        ], [
+            'reason' => ['required', 'string', 'min:5', 'max:1000'],
+        ], [
+            'reason.required' => 'سبب عكس الدفعة مطلوب.',
+            'reason.min' => 'اكتب سببًا واضحًا لا يقل عن 5 أحرف.',
+        ])->validate();
 
-        $this->dispatch('toast', type: 'success', message: 'تم حذف الدفعة بنجاح');
-    }
+        $paymentService->reverse($payment, $validated['reason'], auth()->id());
 
-    private function refreshSaleStatus(Sale $sale): void
-    {
-        $sale->refresh();
-
-        if ($sale->status === 'cancelled') {
-            return;
-        }
-
-        $paid = (float) $sale->payments()->sum('amount');
-        $total = (float) $sale->total;
-
-        if ($paid <= 0) {
-            $status = 'pending';
-        } elseif ($paid < $total) {
-            $status = 'partial';
-        } else {
-            $status = 'paid';
-        }
-
-        $sale->update([
-            'status' => $status,
-        ]);
+        $this->dispatch('toast', type: 'success', message: 'تم عكس الدفعة محاسبيًا بنجاح');
     }
 
     public function render()
@@ -117,14 +104,14 @@ class PaymentIndex extends Component
             })
             ->when($this->search, function ($query) {
                 $query->where(function ($query) {
-                    $query->where('notes', 'like', '%' . $this->search . '%')
+                    $query->where('notes', 'like', '%'.$this->search.'%')
                         ->orWhereHas('sale', function ($query) {
                             $query->where('id', $this->search);
                         })
                         ->orWhereHas('sale.client', function ($query) {
-                            $query->where('name', 'like', '%' . $this->search . '%')
-                                ->orWhere('company', 'like', '%' . $this->search . '%')
-                                ->orWhere('mobile', 'like', '%' . $this->search . '%');
+                            $query->where('name', 'like', '%'.$this->search.'%')
+                                ->orWhere('company', 'like', '%'.$this->search.'%')
+                                ->orWhere('mobile', 'like', '%'.$this->search.'%');
                         });
                 });
             })

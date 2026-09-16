@@ -83,6 +83,159 @@ textarea,
     outline-offset: 2px;
 }
 
+.task-table-responsive {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--text-muted) 45%, transparent) transparent;
+}
+
+.task-table {
+    min-width: 1380px;
+    font-size: 0.875rem;
+}
+
+.task-table > :not(caption) > * > * {
+    padding: 0.9rem 0.85rem;
+    border-color: var(--surface-border);
+    vertical-align: middle;
+}
+
+.task-table thead th {
+    padding-top: 0.8rem;
+    padding-bottom: 0.8rem;
+    color: var(--text-muted);
+    background: color-mix(in srgb, var(--text-strong) 4%, var(--surface-bg));
+    border-bottom-width: 1px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.task-table tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.task-table tbody tr:not(.table-warning):nth-child(even) > * {
+    background: color-mix(in srgb, var(--text-strong) 1.75%, var(--surface-bg));
+}
+
+.task-table tbody tr:hover > * {
+    background: color-mix(in srgb, var(--primary-color) 5%, var(--surface-bg));
+}
+
+.task-title-cell {
+    width: 260px;
+    min-width: 260px;
+    max-width: 260px;
+}
+
+.task-title-link {
+    display: block;
+    max-width: 175px;
+    overflow: hidden;
+    color: var(--text-strong);
+    font-weight: 700;
+    text-decoration: none;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.task-title-link:hover {
+    color: var(--primary-color);
+}
+
+.task-overdue-label {
+    flex-shrink: 0;
+    color: #dc3545;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.task-assignee + .task-assignee {
+    margin-inline-start: 0.25rem;
+}
+
+.task-status-form {
+    margin: 0;
+}
+
+.task-status-form .form-select {
+    width: 112px;
+    min-width: 112px;
+    padding-block: 0.25rem;
+}
+
+.task-date-cell {
+    font-variant-numeric: tabular-nums;
+}
+
+.task-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.task-actions .btn {
+    display: inline-grid;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    place-items: center;
+}
+
+.task-actions form {
+    display: inline-flex;
+}
+
+.app-table-responsive {
+    border: 1px solid var(--surface-border);
+    border-radius: 12px;
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--text-muted) 45%, transparent) transparent;
+}
+
+.app-data-table {
+    width: max-content;
+    min-width: 100%;
+    margin-bottom: 0;
+    font-size: 0.875rem;
+}
+
+.app-data-table > :not(caption) > * > * {
+    padding: 0.85rem;
+    border-color: var(--surface-border);
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.app-data-table thead th {
+    color: var(--text-muted);
+    background: color-mix(in srgb, var(--text-strong) 4%, var(--surface-bg));
+    border-bottom-width: 1px;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.app-data-table tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.app-data-table tbody tr:not(.table-warning):nth-child(even) > * {
+    background: color-mix(in srgb, var(--text-strong) 1.75%, var(--surface-bg));
+}
+
+.app-data-table tbody tr:hover > * {
+    background: color-mix(in srgb, var(--primary-color) 5%, var(--surface-bg));
+}
+
+.app-data-table .form-select-sm {
+    min-width: 108px;
+}
+
+.app-data-table td.text-end,
+.app-data-table th.text-end {
+    padding-inline-end: 1rem;
+}
+
 /* Bootstrap's .bg-white/.text-dark/.btn-outline-dark utilities are fixed, not
    theme-aware; the app uses them for card headers, emphasis text and the "view"
    row action, so retarget them in dark mode. */

@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Client;
-use App\Models\Payment;
 use App\Models\Quotation;
 use App\Models\Sale;
 use App\Models\Service;
@@ -39,20 +38,22 @@ class SaleController extends Controller
 
     public function create()
     {
-        $clients = Client::query()
-            ->orderBy('name')
-            ->get();
+        $clientQuery = Client::query();
+        $this->applyOwnedRecordScope($clientQuery, 'clients.view_all', 'assigned_to');
+        $clients = $clientQuery->orderBy('name')->get();
 
         $services = Service::query()
             ->where('status', true)
             ->orderBy('name')
             ->get();
 
-        $quotations = Quotation::query()
+        $quotationQuery = Quotation::query();
+        $this->applyOwnedRecordScope($quotationQuery, 'quotations.view_all', 'user_id');
+        $quotations = $quotationQuery
             ->with(['client', 'items.service'])
             ->whereNotNull('client_id')
             ->where('status', 'open')
-            ->whereDoesntHave('sale')
+            ->whereDoesntHave('saleWithTrashed')
             ->latest()
             ->get();
 
@@ -106,10 +107,22 @@ class SaleController extends Controller
 
             $paidAmount = (float) ($data['paid_amount'] ?? 0);
 
+            if ($paidAmount > (float) $sale->total) {
+                throw ValidationException::withMessages([
+                    'paid_amount' => 'الدفعة الأولى لا يمكن أن تكون أكبر من إجمالي البيع.',
+                ]);
+            }
+
+            if ($paidAmount > 0 && ($data['status'] ?? null) === 'cancelled') {
+                throw ValidationException::withMessages([
+                    'status' => 'لا يمكن إلغاء عملية بيع أثناء تسجيل دفعة عليها.',
+                ]);
+            }
+
             if ($paidAmount > 0) {
                 $sale->payments()->create([
                     'user_id' => auth()->id(),
-                    'amount' => min($paidAmount, (float) $sale->total),
+                    'amount' => $paidAmount,
                     'payment_method' => $data['payment_method'],
                     'paid_at' => $data['sold_at'] ?? now()->toDateString(),
                     'notes' => 'دفعة أولى مسجلة مع عملية البيع',
@@ -118,6 +131,7 @@ class SaleController extends Controller
 
             if (($data['status'] ?? null) === 'cancelled') {
                 $sale->update(['status' => 'cancelled']);
+
                 return;
             }
 
@@ -139,7 +153,9 @@ class SaleController extends Controller
             'payments',
         ]);
 
-        $clients = Client::query()
+        $clientQuery = Client::query();
+        $this->applyOwnedRecordScopeIncluding($clientQuery, 'clients.view_all', 'assigned_to', $sale->client_id);
+        $clients = $clientQuery
             ->orderBy('name')
             ->get();
 
@@ -148,13 +164,15 @@ class SaleController extends Controller
             ->orderBy('name')
             ->get();
 
-        $quotations = Quotation::query()
+        $quotationQuery = Quotation::query();
+        $this->applyOwnedRecordScopeIncluding($quotationQuery, 'quotations.view_all', 'user_id', $sale->quotation_id);
+        $quotations = $quotationQuery
             ->with(['client', 'items.service'])
             ->where(function ($query) use ($sale) {
                 $query->where(function ($query) {
-                    $query->whereNotNull('client_id')
-                        ->where('status', 'open')
-                        ->whereDoesntHave('sale');
+                        $query->whereNotNull('client_id')
+                            ->where('status', 'open')
+                            ->whereDoesntHave('saleWithTrashed');
                 });
 
                 if ($sale->quotation_id) {
@@ -179,7 +197,11 @@ class SaleController extends Controller
         $data = $this->validateSale($request, $sale);
 
         DB::transaction(function () use ($sale, $data) {
-            $quotation = $this->resolveQuotation($data, $sale);
+            $lockedSale = Sale::query()
+                ->lockForUpdate()
+                ->findOrFail($sale->id);
+
+            $quotation = $this->resolveQuotation($data, $lockedSale);
 
             if ($quotation) {
                 $data['client_id'] = $quotation->client_id;
@@ -193,28 +215,51 @@ class SaleController extends Controller
                 $totals = $this->calculateTotals($data);
             }
 
-            $sale->update([
+            $paidAmount = (float) $lockedSale->payments()->sum('amount');
+
+            if ($paidAmount > 0 && (
+                (int) $data['client_id'] !== (int) $lockedSale->client_id
+                || (int) ($quotation?->id) !== (int) $lockedSale->quotation_id
+            )) {
+                throw ValidationException::withMessages([
+                    'client_id' => 'لا يمكن تغيير العميل أو عرض السعر بعد تسجيل دفعات.',
+                ]);
+            }
+
+            if ((float) $totals['total'] < $paidAmount) {
+                throw ValidationException::withMessages([
+                    'unit_price' => 'إجمالي البيع الجديد أقل من المبلغ المدفوع بالفعل.',
+                ]);
+            }
+
+            if (($data['status'] ?? null) === 'cancelled' && $paidAmount > 0) {
+                throw ValidationException::withMessages([
+                    'status' => 'لا يمكن إلغاء عملية بيع لها دفعات. يجب معالجة الاسترداد أولًا.',
+                ]);
+            }
+
+            $lockedSale->update([
                 'client_id' => $data['client_id'],
                 'quotation_id' => $quotation?->id,
                 'subtotal' => $totals['subtotal'],
                 'vat' => $totals['vat'],
                 'total' => $totals['total'],
                 'payment_method' => $data['payment_method'],
-                'status' => $data['status'] ?? $sale->status,
+                'status' => $data['status'] ?? $lockedSale->status,
                 'sold_at' => $data['sold_at'] ?? now()->toDateString(),
                 'notes' => $data['notes'] ?? null,
             ]);
 
-            $sale->items()->delete();
+            $lockedSale->items()->delete();
 
             if ($quotation) {
-                $this->copyQuotationItemsToSale($sale, $quotation);
+                $this->copyQuotationItemsToSale($lockedSale, $quotation);
             } else {
-                $this->syncItems($sale, $data);
+                $this->syncItems($lockedSale, $data);
             }
 
             if (($data['status'] ?? null) !== 'cancelled') {
-                $sale->refreshPaymentStatus();
+                $lockedSale->refreshPaymentStatus();
             }
         });
 
@@ -227,6 +272,10 @@ class SaleController extends Controller
     {
         $this->authorizeOwnedRecordAccess('sales.view_all', $sale->user_id);
 
+        if ($sale->payments()->exists()) {
+            return back()->with('error', 'لا يمكن حذف عملية بيع لها دفعات مسجلة. احتفظ بها للسجل المالي.');
+        }
+
         $sale->delete();
 
         return redirect()
@@ -238,7 +287,7 @@ class SaleController extends Controller
     {
         $hasQuotation = $request->filled('quotation_id');
 
-        return $request->validate([
+        $data = $request->validate([
             'quotation_id' => ['nullable', 'exists:quotations,id'],
 
             'client_id' => [$hasQuotation ? 'nullable' : 'required', 'exists:clients,id'],
@@ -270,6 +319,26 @@ class SaleController extends Controller
             'quantity.*.required' => 'الكمية مطلوبة',
             'unit_price.*.required' => 'سعر الخدمة مطلوب',
         ]);
+
+        if (! $hasQuotation) {
+            $itemCount = count($data['service_id'] ?? []);
+
+            if (
+                count($data['quantity'] ?? []) !== $itemCount
+                || count($data['unit_price'] ?? []) !== $itemCount
+            ) {
+                throw ValidationException::withMessages([
+                    'service_id' => 'بيانات الخدمات والكميات والأسعار غير متطابقة. أعد تحميل الصفحة وحاول مرة أخرى.',
+                ]);
+            }
+
+            if (! $sale || (int) $data['client_id'] !== (int) $sale->client_id) {
+                $client = Client::query()->findOrFail($data['client_id']);
+                $this->authorizeOwnedRecordAccess('clients.view_all', $client->assigned_to);
+            }
+        }
+
+        return $data;
     }
 
     private function resolveQuotation(array $data, ?Sale $sale = null): ?Quotation
@@ -279,8 +348,13 @@ class SaleController extends Controller
         }
 
         $quotation = Quotation::query()
-            ->with(['items.service', 'sale'])
+            ->with(['items.service', 'saleWithTrashed'])
+            ->lockForUpdate()
             ->findOrFail($data['quotation_id']);
+
+        if (! $sale || (int) $quotation->id !== (int) $sale->quotation_id) {
+            $this->authorizeOwnedRecordAccess('quotations.view_all', $quotation->user_id);
+        }
 
         if ($quotation->status !== 'open' && (int) $quotation->id !== (int) $sale?->quotation_id) {
             throw ValidationException::withMessages([
@@ -294,7 +368,7 @@ class SaleController extends Controller
             ]);
         }
 
-        if ($quotation->sale && (int) $quotation->sale->id !== (int) $sale?->id) {
+        if ($quotation->saleWithTrashed && (int) $quotation->saleWithTrashed->id !== (int) $sale?->id) {
             throw ValidationException::withMessages([
                 'quotation_id' => 'عرض السعر المختار مرتبط بعملية بيع أخرى بالفعل',
             ]);

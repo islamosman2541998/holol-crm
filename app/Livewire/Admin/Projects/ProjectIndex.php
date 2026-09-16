@@ -97,6 +97,9 @@ class ProjectIndex extends Component
             ->withCount([
                 'tasks',
                 'openTasks',
+                'completedTasks',
+                'milestones',
+                'completedMilestones',
             ]);
 
         $this->applyVisibilityScope($query);

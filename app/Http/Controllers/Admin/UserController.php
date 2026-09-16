@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Traits\RestrictsPermissionGrants;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
+    use RestrictsPermissionGrants;
+
     public function index()
     {
         $users = User::query()
@@ -20,15 +22,12 @@ class UserController extends Controller
         return view('admin.users.index', compact('users'));
     }
 
-   public function create()
-{
-    $roles = Role::query()
-        ->where('guard_name', 'web')
-        ->orderBy('name')
-        ->get();
+    public function create()
+    {
+        $roles = $this->grantableRoles();
 
-    return view('admin.users.create', compact('roles'));
-}
+        return view('admin.users.create', compact('roles'));
+    }
 
     public function store(Request $request)
     {
@@ -49,11 +48,7 @@ class UserController extends Controller
             'role.required' => 'يجب اختيار دور للمستخدم',
         ]);
 
-        if ($data['role'] === 'SEO Manager' && ! auth()->user()->hasRole('SEO Manager')) {
-            return back()
-                ->withErrors(['role' => 'لا يمكنك منح دور المدير SEO'])
-                ->withInput();
-        }
+        $this->guardRoleAssignment($data['role']);
 
         $user = User::query()->create([
             'name' => $data['name'],
@@ -70,20 +65,23 @@ class UserController extends Controller
             ->with('success', 'تم إنشاء المستخدم بنجاح');
     }
 
-   public function edit(User $user)
-{
-    $roles = Role::query()
-        ->where('guard_name', 'web')
-        ->orderBy('name')
-        ->get();
+    public function edit(User $user)
+    {
+        $currentRole = $this->baseRoleName($user);
+        $roles = $this->grantableRoles($currentRole);
 
-    return view('admin.users.edit', compact('user', 'roles'));
-}
+        return view('admin.users.edit', compact('user', 'roles', 'currentRole'));
+    }
+
     public function update(Request $request, User $user)
     {
+        if ($user->hasRole('SEO Manager') && ! auth()->user()->hasRole('SEO Manager')) {
+            return back()->with('error', 'لا يمكنك تعديل حساب المدير SEO');
+        }
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email,'.$user->id],
             'phone' => ['nullable', 'string', 'max:50'],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
             'role' => ['required', 'exists:roles,name'],
@@ -97,17 +95,15 @@ class UserController extends Controller
             'role.required' => 'يجب اختيار دور للمستخدم',
         ]);
 
-        if (auth()->id() === $user->id && $data['role'] !== $user->getRoleNames()->first()) {
+        $currentRole = $this->baseRoleName($user);
+
+        if (auth()->id() === $user->id && $data['role'] !== $currentRole) {
             return back()
                 ->withErrors(['role' => 'لا يمكنك تغيير دور حسابك الحالي'])
                 ->withInput();
         }
 
-        if ($data['role'] === 'SEO Manager' && ! auth()->user()->hasRole('SEO Manager')) {
-            return back()
-                ->withErrors(['role' => 'لا يمكنك منح دور المدير SEO'])
-                ->withInput();
-        }
+        $this->guardRoleAssignment($data['role'], $currentRole);
 
         $user->update([
             'name' => $data['name'],
@@ -122,7 +118,11 @@ class UserController extends Controller
             ]);
         }
 
-        $user->syncRoles([$data['role']]);
+        $teamRoles = $user->getRoleNames()
+            ->filter(fn (string $roleName) => str_starts_with($roleName, 'team_'))
+            ->all();
+
+        $user->syncRoles([...$teamRoles, $data['role']]);
 
         return redirect()
             ->route('admin.users.index')
@@ -139,10 +139,16 @@ class UserController extends Controller
             return back()->with('error', 'لا يمكنك حذف حسابك الحالي');
         }
 
-        $user->delete();
+        $user->update(['status' => false]);
 
         return redirect()
             ->route('admin.users.index')
-            ->with('success', 'تم حذف المستخدم بنجاح');
+            ->with('success', 'تم تعطيل المستخدم مع الاحتفاظ بسجل أعماله بنجاح');
+    }
+
+    private function baseRoleName(User $user): ?string
+    {
+        return $user->getRoleNames()
+            ->first(fn (string $roleName) => ! str_starts_with($roleName, 'team_'));
     }
 }

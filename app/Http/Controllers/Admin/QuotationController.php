@@ -8,6 +8,7 @@ use App\Models\Lead;
 use App\Models\Quotation;
 use App\Models\Service;
 use App\Traits\AuthorizesOwnedRecords;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -26,11 +27,13 @@ class QuotationController extends Controller
 
     public function create()
     {
-        $clients = Client::query()
-            ->orderBy('name')
-            ->get();
+        $clientQuery = Client::query();
+        $this->applyOwnedRecordScope($clientQuery, 'clients.view_all', 'assigned_to');
+        $clients = $clientQuery->orderBy('name')->get();
 
-        $leads = Lead::query()
+        $leadQuery = Lead::query();
+        $this->applyOwnedRecordScope($leadQuery, 'leads.view_all', 'assigned_to');
+        $leads = $leadQuery
             ->where('status', '!=', 'converted')
             ->orderBy('name')
             ->get();
@@ -82,7 +85,7 @@ class QuotationController extends Controller
                     $quotation->logActivity(
                         event: 'created',
                         title: 'تم إنشاء عرض سعر',
-                        description: 'تم إنشاء عرض السعر رقم ' . $quotation->quotation_number,
+                        description: 'تم إنشاء عرض السعر رقم '.$quotation->quotation_number,
                         newValues: $quotation->only([
                             'client_id',
                             'lead_id',
@@ -96,7 +99,7 @@ class QuotationController extends Controller
                 });
 
                 break;
-            } catch (\Illuminate\Database\QueryException $e) {
+            } catch (QueryException $e) {
                 $isDuplicateNumber = (int) $e->getCode() === 23000
                     && str_contains($e->getMessage(), 'quotation_number');
 
@@ -134,11 +137,15 @@ class QuotationController extends Controller
 
         $quotation->load('items');
 
-        $clients = Client::query()
+        $clientQuery = Client::query();
+        $this->applyOwnedRecordScopeIncluding($clientQuery, 'clients.view_all', 'assigned_to', $quotation->client_id);
+        $clients = $clientQuery
             ->orderBy('name')
             ->get();
 
-        $leads = Lead::query()
+        $leadQuery = Lead::query();
+        $this->applyOwnedRecordScopeIncluding($leadQuery, 'leads.view_all', 'assigned_to', $quotation->lead_id);
+        $leads = $leadQuery
             ->where(function ($query) use ($quotation) {
                 $query->where('status', '!=', 'converted');
 
@@ -168,7 +175,7 @@ class QuotationController extends Controller
 
         abort_if(in_array($quotation->status, ['closed', 'cancelled']), 403);
 
-        $data = $this->validateQuotation($request);
+        $data = $this->validateQuotation($request, $quotation);
 
         DB::transaction(function () use ($quotation, $data) {
             $oldValues = $quotation->only([
@@ -203,7 +210,7 @@ class QuotationController extends Controller
             $quotation->logActivity(
                 event: 'updated',
                 title: 'تم تعديل عرض السعر',
-                description: 'تم تعديل بيانات عرض السعر رقم ' . $quotation->quotation_number,
+                description: 'تم تعديل بيانات عرض السعر رقم '.$quotation->quotation_number,
                 oldValues: $oldValues,
                 newValues: $quotation->only([
                     'client_id',
@@ -259,7 +266,7 @@ class QuotationController extends Controller
         $quotation->logActivity(
             event: 'status_changed',
             title: 'تم تغيير حالة عرض السعر',
-            description: 'تم تغيير الحالة من ' . $oldStatus . ' إلى ' . $quotation->status,
+            description: 'تم تغيير الحالة من '.$oldStatus.' إلى '.$quotation->status,
             oldValues: [
                 'status' => $oldStatus,
             ],
@@ -271,11 +278,44 @@ class QuotationController extends Controller
         return back()->with('success', 'تم تحديث حالة عرض السعر بنجاح');
     }
 
+    public function createSale(Quotation $quotation)
+    {
+        $this->authorizeOwnedRecordAccess('quotations.view_all', $quotation->user_id);
+
+        $quotation->loadMissing(['items', 'saleWithTrashed']);
+
+        if ($quotation->status !== 'open') {
+            return back()->with('error', 'يجب أن يكون عرض السعر مفتوحًا قبل تحويله إلى بيع.');
+        }
+
+        if (! $quotation->client_id) {
+            return back()->with('error', 'يجب تحويل الـ Lead إلى عميل قبل إنشاء عملية البيع.');
+        }
+
+        if ($quotation->saleWithTrashed) {
+            if ($quotation->saleWithTrashed->trashed()) {
+                return back()->with('error', 'عرض السعر مرتبط بعملية بيع مؤرشفة ولا يمكن إنشاء بيع مكرر له.');
+            }
+
+            return redirect()
+                ->route('admin.sales.show', $quotation->saleWithTrashed)
+                ->with('error', 'عرض السعر مرتبط بعملية بيع بالفعل.');
+        }
+
+        if ($quotation->items->isEmpty()) {
+            return back()->with('error', 'لا يمكن تحويل عرض سعر لا يحتوي على خدمات.');
+        }
+
+        return redirect()->route('admin.sales.create', [
+            'quotation_id' => $quotation->id,
+        ]);
+    }
+
     public function destroy(Quotation $quotation)
     {
         $this->authorizeOwnedRecordAccess('quotations.view_all', $quotation->user_id);
 
-        if ($quotation->sale) {
+        if ($quotation->saleWithTrashed()->exists()) {
             return back()->with('error', 'لا يمكن حذف عرض سعر مرتبط بعملية بيع');
         }
 
@@ -286,7 +326,7 @@ class QuotationController extends Controller
             ->with('success', 'تم حذف عرض السعر بنجاح');
     }
 
-    private function validateQuotation(Request $request): array
+    private function validateQuotation(Request $request, ?Quotation $quotation = null): array
     {
         $data = $request->validate([
             'client_id' => ['nullable', 'exists:clients,id'],
@@ -331,8 +371,30 @@ class QuotationController extends Controller
             ]);
         }
 
+        if ($hasClient && (! $quotation || (int) $data['client_id'] !== (int) $quotation->client_id)) {
+            $client = Client::query()->findOrFail($data['client_id']);
+            $this->authorizeOwnedRecordAccess('clients.view_all', $client->assigned_to);
+        }
+
+        if ($hasLead && (! $quotation || (int) $data['lead_id'] !== (int) $quotation->lead_id)) {
+            $lead = Lead::query()->findOrFail($data['lead_id']);
+            $this->authorizeOwnedRecordAccess('leads.view_all', $lead->assigned_to);
+        }
+
+        $itemCount = count($data['service_id'] ?? []);
+
+        if (
+            count($data['quantity'] ?? []) !== $itemCount
+            || count($data['unit_price'] ?? []) !== $itemCount
+        ) {
+            throw ValidationException::withMessages([
+                'service_id' => 'بيانات الخدمات والكميات والأسعار غير متطابقة. أعد تحميل الصفحة وحاول مرة أخرى.',
+            ]);
+        }
+
         return $data;
     }
+
     public function pdf(Quotation $quotation)
     {
         $this->authorizeOwnedRecordAccess('quotations.view_all', $quotation->user_id);
@@ -358,16 +420,17 @@ class QuotationController extends Controller
             'margin_left' => 10,
         ]);
 
-        $mpdf->SetTitle('عرض سعر ' . $quotation->quotation_number);
+        $mpdf->SetTitle('عرض سعر '.$quotation->quotation_number);
         $mpdf->WriteHTML($html);
 
-        $filename = $quotation->quotation_number . '.pdf';
+        $filename = $quotation->quotation_number.'.pdf';
 
         return response($mpdf->Output($filename, Destination::STRING_RETURN), 200, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="' . $filename . '"',
+            'Content-Disposition' => 'inline; filename="'.$filename.'"',
         ]);
     }
+
     private function calculateTotals(array $data): array
     {
         $subtotal = 0;
@@ -406,13 +469,17 @@ class QuotationController extends Controller
 
     private function generateQuotationNumber(): string
     {
-        $prefix = 'QTN-' . now()->format('Ymd') . '-';
+        $prefix = 'QTN-'.now()->format('Ymd').'-';
 
-        $lastNumber = Quotation::query()
-            ->where('quotation_number', 'like', $prefix . '%')
+        $lastQuotationNumber = Quotation::withTrashed()
+            ->where('quotation_number', 'like', $prefix.'%')
             ->lockForUpdate()
-            ->count() + 1;
+            ->max('quotation_number');
 
-        return $prefix . str_pad((string) $lastNumber, 4, '0', STR_PAD_LEFT);
+        $lastNumber = $lastQuotationNumber
+            ? ((int) Str::afterLast($lastQuotationNumber, '-')) + 1
+            : 1;
+
+        return $prefix.str_pad((string) $lastNumber, 4, '0', STR_PAD_LEFT);
     }
 }

@@ -4,8 +4,9 @@ namespace App\Livewire\Admin\Sales;
 
 use App\Models\Payment;
 use App\Models\Sale;
+use App\Services\PaymentService;
 use App\Traits\AuthorizesOwnedRecords;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Validator;
 use Livewire\Component;
 
 class SalePayments extends Component
@@ -15,8 +16,11 @@ class SalePayments extends Component
     public Sale $sale;
 
     public string $amount = '';
+
     public string $payment_method = 'cash';
+
     public ?string $paid_at = null;
+
     public ?string $notes = null;
 
     public function mount(Sale $sale): void
@@ -25,17 +29,11 @@ class SalePayments extends Component
         $this->paid_at = now()->format('Y-m-d');
     }
 
-    public function save(): void
+    public function save(PaymentService $paymentService): void
     {
-        abort_unless(auth()->user()->can('sales.edit'), 403);
+        abort_unless(auth()->user()->can('payments.create'), 403);
 
         $this->authorizeOwnedRecordAccess('sales.view_all', $this->sale->user_id);
-
-        if ($this->sale->status === 'cancelled') {
-            throw ValidationException::withMessages([
-                'amount' => 'لا يمكن إضافة دفعة لعملية بيع ملغية.',
-            ]);
-        }
 
         $data = $this->validate([
             'amount' => ['required', 'numeric', 'min:1'],
@@ -49,22 +47,8 @@ class SalePayments extends Component
             'paid_at.required' => 'تاريخ الدفع مطلوب',
         ]);
 
-        if ((float) $data['amount'] > (float) $this->sale->remaining_amount) {
-            throw ValidationException::withMessages([
-                'amount' => 'مبلغ الدفعة أكبر من المبلغ المتبقي.',
-            ]);
-        }
-
-        Payment::query()->create([
-            'sale_id' => $this->sale->id,
-            'user_id' => auth()->id(),
-            'amount' => $data['amount'],
-            'payment_method' => $data['payment_method'],
-            'paid_at' => $data['paid_at'],
-            'notes' => $data['notes'] ?? null,
-        ]);
-
-        $this->refreshSaleStatus();
+        $paymentService->create($this->sale, $data, auth()->id());
+        $this->sale->refresh();
 
         $this->reset([
             'amount',
@@ -77,9 +61,9 @@ class SalePayments extends Component
         $this->dispatch('toast', type: 'success', message: 'تم إضافة الدفعة بنجاح');
     }
 
-    public function delete(int $paymentId): void
+    public function reverse(int $paymentId, string $reason, PaymentService $paymentService): void
     {
-        abort_unless(auth()->user()->can('sales.edit'), 403);
+        abort_unless(auth()->user()->can('payments.delete'), 403);
 
         $this->authorizeOwnedRecordAccess('sales.view_all', $this->sale->user_id);
 
@@ -87,44 +71,34 @@ class SalePayments extends Component
             ->where('sale_id', $this->sale->id)
             ->findOrFail($paymentId);
 
-        $payment->delete();
+        $validated = Validator::make([
+            'reason' => $reason,
+        ], [
+            'reason' => ['required', 'string', 'min:5', 'max:1000'],
+        ], [
+            'reason.required' => 'سبب عكس الدفعة مطلوب.',
+            'reason.min' => 'اكتب سببًا واضحًا لا يقل عن 5 أحرف.',
+        ])->validate();
 
-        $this->refreshSaleStatus();
-
-        $this->dispatch('toast', type: 'success', message: 'تم حذف الدفعة بنجاح');
-    }
-
-    private function refreshSaleStatus(): void
-    {
+        $paymentService->reverse($payment, $validated['reason'], auth()->id());
         $this->sale->refresh();
 
-        $paid = (float) $this->sale->payments()->sum('amount');
-        $total = (float) $this->sale->total;
-
-        if ($paid <= 0) {
-            $status = 'pending';
-        } elseif ($paid < $total) {
-            $status = 'partial';
-        } else {
-            $status = 'paid';
-        }
-
-        if ($this->sale->status !== 'cancelled') {
-            $this->sale->update([
-                'status' => $status,
-            ]);
-        }
-
-        $this->sale->refresh();
-        $this->sale->load(['payments.user']);
+        $this->dispatch('toast', type: 'success', message: 'تم عكس الدفعة محاسبيًا بنجاح');
     }
 
     public function render()
     {
         $this->sale->load(['payments.user']);
 
+        $reversedPayments = $this->sale->payments()
+            ->onlyTrashed()
+            ->with(['user', 'reversal.user'])
+            ->latest('deleted_at')
+            ->get();
+
         return view('livewire.admin.sales.sale-payments', [
             'payments' => $this->sale->payments()->with('user')->latest()->get(),
+            'reversedPayments' => $reversedPayments,
         ]);
     }
 }

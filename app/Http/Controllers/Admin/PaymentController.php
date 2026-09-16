@@ -5,10 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
 use App\Models\Sale;
+use App\Services\PaymentService;
 use App\Traits\AuthorizesOwnedRecords;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 
 class PaymentController extends Controller
 {
@@ -19,25 +18,11 @@ class PaymentController extends Controller
         return view('admin.payments.index');
     }
 
-    public function store(Request $request, Sale $sale)
+    public function store(Request $request, Sale $sale, PaymentService $paymentService)
     {
         abort_unless(auth()->user()->can('payments.create'), 403);
 
         $this->authorizeOwnedRecordAccess('sales.view_all', $sale->user_id);
-
-        $sale->load(['payments', 'quotation']);
-
-        if ($sale->status === 'cancelled') {
-            throw ValidationException::withMessages([
-                'amount' => 'لا يمكن إضافة دفعة لعملية بيع ملغية.',
-            ]);
-        }
-
-        if ($sale->remaining_amount <= 0) {
-            throw ValidationException::withMessages([
-                'amount' => 'عملية البيع مدفوعة بالكامل بالفعل.',
-            ]);
-        }
 
         $data = $request->validate([
             'amount' => ['required', 'numeric', 'min:1'],
@@ -51,47 +36,34 @@ class PaymentController extends Controller
             'payment_method.required' => 'طريقة الدفع مطلوبة',
         ]);
 
-        if ((float) $data['amount'] > (float) $sale->remaining_amount) {
-            throw ValidationException::withMessages([
-                'amount' => 'مبلغ الدفعة أكبر من المبلغ المتبقي.',
-            ]);
-        }
-
-        DB::transaction(function () use ($sale, $data) {
-            $payment = $sale->payments()->create([
-                'user_id' => auth()->id(),
-                'amount' => $data['amount'],
-                'payment_method' => $data['payment_method'],
-                'paid_at' => $data['paid_at'] ?? now()->toDateString(),
-                'notes' => $data['notes'] ?? null,
-            ]);
-
-            $payment->sale->refreshPaymentStatus();
-        });
+        $paymentService->create($sale, $data, auth()->id());
 
         return redirect()
             ->route('admin.sales.show', $sale)
             ->with('success', 'تم تسجيل الدفعة بنجاح');
     }
 
-    public function destroy(Payment $payment)
+    public function destroy(Request $request, Payment $payment, PaymentService $paymentService)
     {
         abort_unless(auth()->user()->can('payments.delete'), 403);
 
         $sale = $payment->sale;
 
-        $this->authorizeOwnedRecordAccess('sales.view_all', $sale?->user_id);
+        abort_unless($sale, 404);
 
-        DB::transaction(function () use ($payment, $sale) {
-            $payment->delete();
+        $this->authorizeOwnedRecordAccess('sales.view_all', $sale->user_id);
 
-            if ($sale) {
-                $sale->refreshPaymentStatus();
-            }
-        });
+        $data = $request->validate([
+            'reversal_reason' => ['required', 'string', 'min:5', 'max:1000'],
+        ], [
+            'reversal_reason.required' => 'سبب عكس الدفعة مطلوب.',
+            'reversal_reason.min' => 'سبب عكس الدفعة يجب أن يكون واضحًا (5 أحرف على الأقل).',
+        ]);
+
+        $paymentService->reverse($payment, $data['reversal_reason'], auth()->id());
 
         return redirect()
             ->route('admin.sales.show', $sale)
-            ->with('success', 'تم حذف الدفعة وتحديث حالة البيع بنجاح');
+            ->with('success', 'تم عكس الدفعة محاسبيًا وتحديث حالة البيع بنجاح');
     }
 }

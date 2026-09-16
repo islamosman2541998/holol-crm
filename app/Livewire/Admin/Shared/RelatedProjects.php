@@ -29,6 +29,9 @@ class RelatedProjects extends Component
             ->withCount([
                 'tasks',
                 'openTasks',
+                'completedTasks',
+                'milestones',
+                'completedMilestones',
             ])
             ->when($this->type === 'client', function ($query) {
                 $query->where('client_id', $this->id);

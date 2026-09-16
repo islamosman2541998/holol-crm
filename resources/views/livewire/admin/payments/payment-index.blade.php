@@ -72,8 +72,8 @@
         </div>
 
         <div class="card-body">
-            <div class="table-responsive">
-                <table class="table align-middle">
+            <div class="table-responsive app-table-responsive">
+                <table class="table table-hover align-middle app-data-table">
                     <thead>
                         <tr>
                             <th>رقم البيع</th>
@@ -127,8 +127,9 @@
                                     @can('payments.delete')
                                         <button type="button"
                                                 class="btn btn-sm btn-outline-danger"
-                                                onclick="confirmDeletePaymentFromIndex({{ $payment->id }})">
-                                            <i class="bi bi-trash"></i>
+                                                title="عكس الدفعة محاسبيًا"
+                                                onclick="confirmReversePaymentFromIndex({{ $payment->id }})">
+                                            <i class="bi bi-arrow-counterclockwise"></i>
                                         </button>
                                     @endcan
                                 </td>
@@ -151,20 +152,31 @@
     </div>
 
     <script>
-        function confirmDeletePaymentFromIndex(id) {
+        function confirmReversePaymentFromIndex(id) {
             Swal.fire({
-                title: 'هل أنت متأكد؟',
-                text: 'سيتم حذف الدفعة وإعادة حساب حالة البيع',
+                title: 'عكس الدفعة محاسبيًا',
+                text: 'ستُستبعد الدفعة من التحصيل مع الاحتفاظ بسجل كامل للعملية.',
                 icon: 'warning',
+                input: 'textarea',
+                inputLabel: 'سبب عكس الدفعة',
+                inputPlaceholder: 'اكتب سببًا واضحًا...',
+                inputAttributes: {
+                    maxlength: 1000,
+                },
                 showCancelButton: true,
-                confirmButtonText: 'نعم، احذف',
+                confirmButtonText: 'تأكيد العكس',
                 cancelButtonText: 'إلغاء',
                 confirmButtonColor: '#dc3545',
                 cancelButtonColor: '#6c757d',
                 reverseButtons: true,
+                inputValidator: (value) => {
+                    if (!value || value.trim().length < 5) {
+                        return 'اكتب سببًا واضحًا لا يقل عن 5 أحرف';
+                    }
+                },
             }).then((result) => {
                 if (result.isConfirmed) {
-                    @this.call('delete', id);
+                    @this.call('reverse', id, result.value.trim());
                 }
             });
         }

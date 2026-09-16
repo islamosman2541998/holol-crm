@@ -9,12 +9,16 @@ use App\Models\Project;
 use App\Models\ProjectAttachment;
 use App\Models\Service;
 use App\Models\Team;
+use App\Traits\AuthorizesOwnedRecords;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class ProjectController extends Controller
 {
+    use AuthorizesOwnedRecords;
+
     public function index()
     {
         return view('admin.projects.index');
@@ -22,9 +26,9 @@ class ProjectController extends Controller
 
     public function create()
     {
-        $clients = Client::query()
-            ->orderBy('name')
-            ->get();
+        $clientQuery = Client::query();
+        $this->applyOwnedRecordScope($clientQuery, 'clients.view_all', 'assigned_to');
+        $clients = $clientQuery->orderBy('name')->get();
 
         $services = Service::query()
             ->orderBy('name')
@@ -75,7 +79,7 @@ class ProjectController extends Controller
         $project->logActivity(
             event: 'created',
             title: 'تم إنشاء المشروع',
-            description: 'تم إنشاء مشروع جديد: ' . $project->name,
+            description: 'تم إنشاء مشروع جديد: '.$project->name,
             newValues: $project->only([
                 'client_id',
                 'service_id',
@@ -120,7 +124,9 @@ class ProjectController extends Controller
     {
         $this->authorizeProjectAccess($project);
 
-        $clients = Client::query()
+        $clientQuery = Client::query();
+        $this->applyOwnedRecordScopeIncluding($clientQuery, 'clients.view_all', 'assigned_to', $project->client_id);
+        $clients = $clientQuery
             ->orderBy('name')
             ->get();
 
@@ -200,7 +206,7 @@ class ProjectController extends Controller
         $project->logActivity(
             event: 'updated',
             title: 'تم تحديث المشروع',
-            description: 'تم تحديث بيانات المشروع: ' . $project->name,
+            description: 'تم تحديث بيانات المشروع: '.$project->name,
             oldValues: $oldValues,
             newValues: $project->only([
                 'client_id',
@@ -236,7 +242,7 @@ class ProjectController extends Controller
         $project->logActivity(
             event: 'deleted',
             title: 'تم حذف المشروع',
-            description: 'تم حذف المشروع: ' . $project->name,
+            description: 'تم حذف المشروع: '.$project->name,
             oldValues: $project->toArray()
         );
 
@@ -267,9 +273,9 @@ class ProjectController extends Controller
         $project->logActivity(
             event: 'status_changed',
             title: 'تم تغيير حالة المشروع',
-            description: 'تم تغيير حالة المشروع من ' .
-                $this->statusLabel($oldStatus) .
-                ' إلى ' .
+            description: 'تم تغيير حالة المشروع من '.
+                $this->statusLabel($oldStatus).
+                ' إلى '.
                 $this->statusLabel($project->status),
             oldValues: [
                 'status' => $oldStatus,
@@ -284,13 +290,13 @@ class ProjectController extends Controller
 
     private function validateProject(Request $request, ?Project $project = null): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'client_id' => ['required', 'exists:clients,id'],
             'service_id' => ['nullable', 'exists:services,id'],
             'team_id' => ['nullable', 'exists:teams,id'],
             'manager_member_id' => ['nullable', 'exists:members,id'],
             'name' => ['required', 'string', 'max:255'],
-            'code' => ['nullable', 'string', 'max:100', 'unique:projects,code,' . ($project?->id ?? 'NULL')],
+            'code' => ['nullable', 'string', 'max:100', 'unique:projects,code,'.($project?->id ?? 'NULL')],
             'description' => ['nullable', 'string'],
             'priority' => ['required', 'in:low,medium,high,urgent'],
             'status' => ['required', 'in:new,planning,in_progress,on_hold,completed,cancelled'],
@@ -306,6 +312,23 @@ class ProjectController extends Controller
             'due_date.after_or_equal' => 'تاريخ التسليم يجب أن يكون بعد أو يساوي تاريخ البداية',
             'code.unique' => 'كود المشروع مستخدم من قبل',
         ]);
+
+        if (! empty($data['manager_member_id'])) {
+            $manager = Member::query()->find($data['manager_member_id']);
+
+            if (empty($data['team_id']) || (int) $manager?->team_id !== (int) $data['team_id']) {
+                throw ValidationException::withMessages([
+                    'manager_member_id' => 'مدير المشروع يجب أن يكون عضوًا في الفريق المختار.',
+                ]);
+            }
+        }
+
+        if (! $project || (int) $data['client_id'] !== (int) $project->client_id) {
+            $client = Client::query()->findOrFail($data['client_id']);
+            $this->authorizeOwnedRecordAccess('clients.view_all', $client->assigned_to);
+        }
+
+        return $data;
     }
 
     private function generateProjectCode(string $name, ?int $ignoreId = null): string
@@ -323,11 +346,11 @@ class ProjectController extends Controller
 
         while (
             Project::query()
-            ->where('code', $code)
-            ->when($ignoreId, fn($query) => $query->where('id', '!=', $ignoreId))
-            ->exists()
+                ->where('code', $code)
+                ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
+                ->exists()
         ) {
-            $code = $base . '-' . $counter;
+            $code = $base.'-'.$counter;
             $counter++;
         }
 

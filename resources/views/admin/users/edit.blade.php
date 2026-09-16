@@ -18,7 +18,7 @@
             @include('admin.users.partials.form', [
                 'user' => $user,
                 'roles' => $roles,
-                'selectedRole' => $user->roles->first()?->name,
+                'selectedRole' => $currentRole,
             ])
         </div>
 

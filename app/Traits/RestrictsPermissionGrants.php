@@ -3,10 +3,69 @@
 namespace App\Traits;
 
 use App\Models\Team;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
+use Spatie\Permission\Models\Role;
 
 trait RestrictsPermissionGrants
 {
+    /**
+     * Return only the base roles that the current user is allowed to grant.
+     * Team roles are managed automatically through Member::syncUserTeamRole().
+     */
+    private function grantableRoles(?string $currentRole = null): Collection
+    {
+        $roles = Role::query()
+            ->where('guard_name', 'web')
+            ->where('name', 'not like', 'team\_%')
+            ->with('permissions')
+            ->orderBy('name')
+            ->get();
+
+        $user = auth()->user();
+
+        if ($user->hasRole('SEO Manager')) {
+            return $roles;
+        }
+
+        $granted = $user->getAllPermissions()->pluck('name');
+
+        return $roles->filter(function (Role $role) use ($currentRole, $granted) {
+            if ($role->name === $currentRole) {
+                return true;
+            }
+
+            return $role->permissions->pluck('name')->diff($granted)->isEmpty();
+        })->values();
+    }
+
+    private function guardRoleAssignment(string $roleName, ?string $currentRole = null): void
+    {
+        if (str_starts_with($roleName, 'team_')) {
+            throw ValidationException::withMessages([
+                'role' => 'أدوار الفرق تُدار من شاشة الأعضاء ولا يمكن تعيينها كدور أساسي.',
+            ]);
+        }
+
+        if ($roleName === $currentRole || auth()->user()->hasRole('SEO Manager')) {
+            return;
+        }
+
+        $role = Role::query()
+            ->where('guard_name', 'web')
+            ->where('name', $roleName)
+            ->with('permissions')
+            ->first();
+
+        $granted = auth()->user()->getAllPermissions()->pluck('name');
+
+        if (! $role || $role->permissions->pluck('name')->diff($granted)->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'role' => 'لا يمكنك منح دور يحتوي على صلاحيات لا تملكها.',
+            ]);
+        }
+    }
+
     /**
      * Prevent a user from granting a role/team permissions they don't hold themselves,
      * so editing a team or role can't be used as a side door to gain new privileges.

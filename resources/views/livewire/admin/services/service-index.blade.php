@@ -42,8 +42,8 @@
         </div>
 
         <div class="card-body">
-            <div class="table-responsive">
-                <table class="table align-middle">
+            <div class="table-responsive app-table-responsive">
+                <table class="table table-hover align-middle app-data-table">
                     <thead>
                         <tr>
                             <th>اسم الخدمة</th>

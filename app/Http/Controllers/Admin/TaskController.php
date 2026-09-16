@@ -10,7 +10,9 @@ use App\Models\Member;
 use App\Models\Task;
 use App\Models\TaskAttachment;
 use App\Notifications\TaskAssignedNotification;
+use App\Traits\AuthorizesOwnedRecords;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
@@ -18,6 +20,8 @@ use App\Models\Project;
 
 class TaskController extends Controller
 {
+    use AuthorizesOwnedRecords;
+
     public function index()
     {
         return view('admin.tasks.index');
@@ -31,16 +35,20 @@ class TaskController extends Controller
             ->orderBy('name')
             ->get();
 
-        $clients = Client::query()
-            ->orderBy('name')
-            ->get();
+        $clientQuery = Client::query();
+        $this->applyOwnedRecordScope($clientQuery, 'clients.view_all', 'assigned_to');
+        $clients = $clientQuery->orderBy('name')->get();
 
-        $leads = Lead::query()
+        $leadQuery = Lead::query();
+        $this->applyOwnedRecordScope($leadQuery, 'leads.view_all', 'assigned_to');
+        $leads = $leadQuery
             ->where('status', '!=', 'converted')
             ->orderBy('name')
             ->get();
 
-        $projects = Project::query()
+        $projectQuery = Project::query();
+        $this->applyProjectAccessScope($projectQuery);
+        $projects = $projectQuery
             ->with(['client', 'team', 'manager'])
             ->whereNotIn('status', ['completed', 'cancelled'])
             ->orderBy('name')
@@ -75,29 +83,32 @@ class TaskController extends Controller
             $data['completed_at'] = now();
         }
 
-        $task = Task::query()->create($data);
+        $task = DB::transaction(function () use ($data, $memberIds) {
+            $task = Task::query()->create($data);
+            $task->assignedMembers()->sync($memberIds);
 
-        $task->assignedMembers()->sync($memberIds);
+            $task->logActivity(
+                event: 'created',
+                title: 'تم إنشاء المهمة',
+                description: 'تم إنشاء مهمة جديدة: ' . $task->title,
+                newValues: $task->only([
+                    'client_id',
+                    'lead_id',
+                    'project_id',
+                    'title',
+                    'priority',
+                    'status',
+                    'start_at',
+                    'due_at',
+                ]) + [
+                    'assigned_members' => $task->assignedMembers()->pluck('name')->all(),
+                ]
+            );
+
+            return $task;
+        });
 
         $this->notifyAssignedMembers($task, $memberIds);
-
-        $task->logActivity(
-            event: 'created',
-            title: 'تم إنشاء المهمة',
-            description: 'تم إنشاء مهمة جديدة: ' . $task->title,
-            newValues: $task->only([
-                'client_id',
-                'lead_id',
-                'project_id',
-                'title',
-                'priority',
-                'status',
-                'start_at',
-                'due_at',
-            ]) + [
-                'assigned_members' => $task->assignedMembers()->pluck('name')->all(),
-            ]
-        );
 
         return redirect()
             ->route('admin.tasks.index')
@@ -219,11 +230,15 @@ class TaskController extends Controller
             ->orderBy('name')
             ->get();
 
-        $clients = Client::query()
+        $clientQuery = Client::query();
+        $this->applyOwnedRecordScopeIncluding($clientQuery, 'clients.view_all', 'assigned_to', $task->client_id);
+        $clients = $clientQuery
             ->orderBy('name')
             ->get();
 
-        $leads = Lead::query()
+        $leadQuery = Lead::query();
+        $this->applyOwnedRecordScopeIncluding($leadQuery, 'leads.view_all', 'assigned_to', $task->lead_id);
+        $leads = $leadQuery
             ->where(function ($query) use ($task) {
                 $query->where('status', '!=', 'converted');
 
@@ -234,7 +249,9 @@ class TaskController extends Controller
             ->orderBy('name')
             ->get();
 
-        $projects = Project::query()
+        $projectQuery = Project::query();
+        $this->applyProjectAccessScope($projectQuery, $task->project_id);
+        $projects = $projectQuery
             ->with(['client', 'team', 'manager'])
             ->where(function ($query) use ($task) {
                 $query->whereNotIn('status', ['completed', 'cancelled']);
@@ -288,33 +305,34 @@ class TaskController extends Controller
 
         $previousMemberIds = $task->assignedMembers()->pluck('members.id')->all();
 
-        $task->update($data);
+        DB::transaction(function () use ($task, $data, $memberIds, $oldValues) {
+            $task->update($data);
+            $task->assignedMembers()->sync($memberIds);
 
-        $task->assignedMembers()->sync($memberIds);
+            $task->logActivity(
+                event: 'updated',
+                title: 'تم تحديث المهمة',
+                description: 'تم تحديث بيانات المهمة: ' . $task->title,
+                oldValues: $oldValues,
+                newValues: $task->only([
+                    'client_id',
+                    'lead_id',
+                    'project_id',
+                    'title',
+                    'description',
+                    'priority',
+                    'status',
+                    'start_at',
+                    'due_at',
+                    'completed_at',
+                    'notes',
+                ]) + [
+                    'assigned_members' => $task->assignedMembers()->pluck('name')->all(),
+                ]
+            );
+        });
 
         $this->notifyAssignedMembers($task, array_diff($memberIds, $previousMemberIds));
-
-        $task->logActivity(
-            event: 'updated',
-            title: 'تم تحديث المهمة',
-            description: 'تم تحديث بيانات المهمة: ' . $task->title,
-            oldValues: $oldValues,
-            newValues: $task->only([
-                'client_id',
-                'lead_id',
-                'project_id',
-                'title',
-                'description',
-                'priority',
-                'status',
-                'start_at',
-                'due_at',
-                'completed_at',
-                'notes',
-            ]) + [
-                'assigned_members' => $task->assignedMembers()->pluck('name')->all(),
-            ]
-        );
 
         return redirect()
             ->route('admin.tasks.index')
@@ -400,6 +418,10 @@ class TaskController extends Controller
         if ($hasProject) {
             $project = Project::query()->findOrFail($data['project_id']);
 
+            if (! $task || (int) $project->id !== (int) $task->project_id) {
+                $this->authorizeProjectAccess($project);
+            }
+
             $data['client_id'] = $project->client_id;
             $data['lead_id'] = null;
 
@@ -427,7 +449,49 @@ class TaskController extends Controller
             ]);
         }
 
+        if (! $hasProject && $hasClient && (! $task || (int) $data['client_id'] !== (int) $task->client_id)) {
+            $client = Client::query()->findOrFail($data['client_id']);
+            $this->authorizeOwnedRecordAccess('clients.view_all', $client->assigned_to);
+        }
+
+        if ($hasLead && (! $task || (int) $data['lead_id'] !== (int) $task->lead_id)) {
+            $lead = Lead::query()->findOrFail($data['lead_id']);
+            $this->authorizeOwnedRecordAccess('leads.view_all', $lead->assigned_to);
+        }
+
         return $data;
+    }
+
+    private function applyProjectAccessScope($query, ?int $includeProjectId = null): void
+    {
+        $user = auth()->user();
+
+        if ($user->can('projects.view_all')) {
+            return;
+        }
+
+        $member = $user->member;
+
+        $query->where(function ($query) use ($member, $includeProjectId) {
+            if (! $member) {
+                $query->whereRaw('1 = 0');
+            } else {
+                $query->where(function ($query) use ($member) {
+                    $query->where('manager_member_id', $member->id)
+                        ->orWhereHas('tasks.assignedMembers', function ($query) use ($member) {
+                            $query->where('members.id', $member->id);
+                        });
+
+                    if ($member->is_manager && $member->team_id) {
+                        $query->orWhere('team_id', $member->team_id);
+                    }
+                });
+            }
+
+            if ($includeProjectId) {
+                $query->orWhere('id', $includeProjectId);
+            }
+        });
     }
 
     private function statusLabel(?string $status): string

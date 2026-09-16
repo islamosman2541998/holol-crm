@@ -5,11 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\Lead;
-use App\Models\User;
+use App\Models\Member;
 use App\Traits\AuthorizesOwnedRecords;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Models\Member;
 
 class LeadController extends Controller
 {
@@ -19,6 +18,7 @@ class LeadController extends Controller
     {
         return view('admin.leads.index');
     }
+
     public function show(Lead $lead)
     {
         $this->authorizeOwnedRecordAccess('leads.view_all', $lead->assigned_to);
@@ -32,6 +32,7 @@ class LeadController extends Controller
 
         return view('admin.leads.show', compact('lead'));
     }
+
     public function create()
     {
         $members = Member::query()
@@ -89,6 +90,10 @@ class LeadController extends Controller
     {
         $this->authorizeOwnedRecordAccess('leads.view_all', $lead->assigned_to);
 
+        if ($lead->quotations()->exists() || $lead->tasks()->exists()) {
+            return back()->with('error', 'لا يمكن حذف Lead مرتبط بعروض أسعار أو مهام. يمكن تغيير حالته بدلًا من الحذف.');
+        }
+
         $lead->delete();
 
         return redirect()
@@ -125,6 +130,11 @@ class LeadController extends Controller
             ]);
 
             $lead->quotations()->update([
+                'client_id' => $client->id,
+                'lead_id' => null,
+            ]);
+
+            $lead->tasks()->update([
                 'client_id' => $client->id,
                 'lead_id' => null,
             ]);

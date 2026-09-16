@@ -73,4 +73,29 @@ trait AuthorizesOwnedRecords
             }
         });
     }
+
+    /**
+     * Apply the regular ownership scope while retaining a record already linked
+     * to the model being edited. Grouping keeps later filters from being bypassed
+     * by the retained record's OR condition.
+     */
+    private function applyOwnedRecordScopeIncluding(
+        $query,
+        string $viewAllPermission,
+        string $ownerColumn,
+        ?int $includedRecordId
+    ): void {
+        if (auth()->user()->can($viewAllPermission)) {
+            return;
+        }
+
+        $query->where(function ($query) use ($viewAllPermission, $ownerColumn, $includedRecordId) {
+            $this->applyOwnedRecordScope($query, $viewAllPermission, $ownerColumn);
+
+            if ($includedRecordId) {
+                $query->orWhereKey($includedRecordId);
+            }
+        });
+    }
+
 }

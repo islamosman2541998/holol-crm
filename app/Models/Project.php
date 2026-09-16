@@ -75,6 +75,11 @@ class Project extends Model
             ->whereNotIn('status', ['completed', 'cancelled']);
     }
 
+    public function completedTasks()
+    {
+        return $this->hasMany(Task::class)->where('status', 'completed');
+    }
+
     public function getStatusLabelAttribute(): string
     {
         return match ($this->status) {
@@ -149,22 +154,26 @@ class Project extends Model
     }
     public function getProgressPercentageAttribute(): int
     {
-        $milestonesCount = $this->milestones()->count();
+        $milestonesCount = array_key_exists('milestones_count', $this->attributes)
+            ? (int) $this->attributes['milestones_count']
+            : $this->milestones()->count();
 
         if ($milestonesCount > 0) {
-            $completedMilestonesCount = $this->milestones()
-                ->where('status', 'completed')
-                ->count();
+            $completedMilestonesCount = array_key_exists('completed_milestones_count', $this->attributes)
+                ? (int) $this->attributes['completed_milestones_count']
+                : $this->completedMilestones()->count();
 
             return (int) round(($completedMilestonesCount / $milestonesCount) * 100);
         }
 
-        $tasksCount = $this->tasks()->count();
+        $tasksCount = array_key_exists('tasks_count', $this->attributes)
+            ? (int) $this->attributes['tasks_count']
+            : $this->tasks()->count();
 
         if ($tasksCount > 0) {
-            $completedTasksCount = $this->tasks()
-                ->where('status', 'completed')
-                ->count();
+            $completedTasksCount = array_key_exists('completed_tasks_count', $this->attributes)
+                ? (int) $this->attributes['completed_tasks_count']
+                : $this->completedTasks()->count();
 
             return (int) round(($completedTasksCount / $tasksCount) * 100);
         }
@@ -174,11 +183,19 @@ class Project extends Model
 
     public function getProgressSourceLabelAttribute(): string
     {
-        if ($this->milestones()->exists()) {
+        $hasMilestones = array_key_exists('milestones_count', $this->attributes)
+            ? (int) $this->attributes['milestones_count'] > 0
+            : $this->milestones()->exists();
+
+        if ($hasMilestones) {
             return 'من مراحل المشروع';
         }
 
-        if ($this->tasks()->exists()) {
+        $hasTasks = array_key_exists('tasks_count', $this->attributes)
+            ? (int) $this->attributes['tasks_count'] > 0
+            : $this->tasks()->exists();
+
+        if ($hasTasks) {
             return 'من المهام';
         }
 
