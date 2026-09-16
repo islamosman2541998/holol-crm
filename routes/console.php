@@ -11,3 +11,8 @@ Artisan::command('inspire', function () {
 Schedule::command('tasks:send-daily-digest')
     ->dailyAt('08:00')
     ->timezone('Africa/Cairo');
+
+Schedule::command('backup:create')
+    ->dailyAt('02:00')
+    ->timezone('Africa/Cairo')
+    ->withoutOverlapping();
