@@ -5,6 +5,7 @@ namespace App\Livewire\Admin\Leads;
 use App\Models\LeadFollowup;
 use App\Models\User;
 use App\Traits\AuthorizesOwnedRecords;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -14,7 +15,10 @@ class LeadFollowupIndex extends Component
 
     public string $search = '';
     public string $type = '';
+
+    #[Url(except: '')]
     public string $status = '';
+
     public string $userId = '';
     public string $dateFilter = '';
 

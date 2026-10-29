@@ -11,7 +11,7 @@
                 <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:14px; overflow:hidden;">
                     <tr>
                         <td style="background-color:#0d6efd; padding:20px 28px;">
-                            <span style="color:#ffffff; font-size:18px; font-weight:bold;">{{ setting('general.system_name', 'Holol CRM') }}</span>
+                            <span style="color:#ffffff; font-size:18px; font-weight:bold;">{{ setting('general.system_name', 'Hulul CRM') }}</span>
                         </td>
                     </tr>
                     <tr>
@@ -83,7 +83,7 @@
                     <tr>
                         <td style="padding:16px 28px; background-color:#f9fafb; text-align:center;">
                             <span style="color:#9ca3af; font-size:12px;">
-                                رسالة تلقائية من {{ setting('general.system_name', 'Holol CRM') }}
+                                رسالة تلقائية من {{ setting('general.system_name', 'Hulul CRM') }}
                             </span>
                         </td>
                     </tr>

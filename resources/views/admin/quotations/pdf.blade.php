@@ -3,8 +3,8 @@
         ? public_path('storage/' . setting('branding.system_logo'))
         : null;
 
-    $companyName = setting('general.company_name', 'Holol');
-    $systemName = setting('general.system_name', 'Holol CRM');
+    $companyName = setting('general.company_name', 'Hulul');
+    $systemName = setting('general.system_name', 'Hulul CRM');
 @endphp
 
 <!doctype html>

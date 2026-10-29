@@ -9,7 +9,7 @@
         </div>
 
         {{-- <div>
-            <div class="brand-title">{{ setting('general.system_name', 'Holol CRM') }}</div>
+            <div class="brand-title">{{ setting('general.system_name', 'Hulul CRM') }}</div>
             <div class="brand-subtitle">لوحة التحكم</div>
         </div> --}}
     </div>

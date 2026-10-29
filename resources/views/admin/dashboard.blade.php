@@ -8,844 +8,481 @@
     @php
         $monthStart = now()->startOfMonth()->toDateString();
         $monthEnd = now()->endOfMonth()->toDateString();
+
+        $user = auth()->user();
+        $sections = [];
+
+        $finance = [];
+
+        if ($user->can('sales.view')) {
+            $finance[] = ['label' => 'إجمالي المبيعات', 'value' => number_format($salesTotal, 2), 'icon' => 'bi-cash-coin', 'url' => route('admin.reports.sales-payments')];
+        }
+
+        if ($user->can('payments.view')) {
+            $finance[] = ['label' => 'إجمالي المدفوع', 'value' => number_format($paymentsTotal, 2), 'icon' => 'bi-wallet2', 'url' => route('admin.reports.sales-payments')];
+            $finance[] = ['label' => 'إجمالي المتبقي', 'value' => number_format($remainingTotal, 2), 'icon' => 'bi-hourglass-bottom', 'url' => route('admin.reports.sales-payments', ['balanceState' => 'has_remaining'])];
+        }
+
+        if ($user->can('sales.view')) {
+            $finance[] = ['label' => 'مبيعات الشهر', 'value' => number_format($monthlySalesTotal, 2), 'icon' => 'bi-calendar-month', 'url' => route('admin.reports.sales-payments', ['soldFrom' => $monthStart, 'soldTo' => $monthEnd])];
+        }
+
+        if ($finance) {
+            $sections[] = ['title' => 'المالية', 'tone' => 'finance', 'link' => ['label' => 'تقرير المبيعات والمدفوعات', 'url' => route('admin.reports.sales-payments')], 'cards' => $finance];
+        }
+
+        if ($user->can('clients.view')) {
+            $sections[] = ['title' => 'العملاء', 'tone' => 'clients', 'link' => ['label' => 'تقرير العملاء', 'url' => route('admin.reports.clients')], 'cards' => [
+                ['label' => 'إجمالي العملاء', 'value' => $clientsCount, 'icon' => 'bi-people', 'url' => route('admin.reports.clients')],
+                ['label' => 'عملاء جدد', 'value' => $newClientsCount, 'icon' => 'bi-person-plus', 'url' => route('admin.reports.clients', ['status' => 'new'])],
+                ['label' => 'عملاء نشطين', 'value' => $activeClientsCount, 'icon' => 'bi-person-check', 'url' => route('admin.reports.clients', ['status' => 'active'])],
+                ['label' => 'عملاء غير نشطين', 'value' => $inactiveClientsCount, 'icon' => 'bi-person-dash', 'url' => route('admin.reports.clients', ['status' => 'inactive'])],
+            ]];
+        }
+
+        if ($user->can('followups.view')) {
+            $sections[] = ['title' => 'متابعات العملاء', 'tone' => 'followups', 'link' => null, 'cards' => [
+                ['label' => 'متابعات اليوم', 'value' => $todayFollowupsCount, 'icon' => 'bi-calendar-event', 'url' => route('admin.reports.clients', ['followupState' => 'today'])],
+                ['label' => 'متابعات متأخرة', 'value' => $overdueFollowupsCount, 'icon' => 'bi-exclamation-triangle', 'url' => route('admin.reports.clients', ['followupState' => 'overdue']), 'alert' => true],
+                ['label' => 'متابعات قيد التنفيذ', 'value' => $pendingFollowupsCount, 'icon' => 'bi-hourglass-split', 'url' => route('admin.reports.clients', ['followupState' => 'pending'])],
+                ['label' => 'متابعات مكتملة', 'value' => $doneFollowupsCount, 'icon' => 'bi-check2-all', 'url' => route('admin.followups.index', ['status' => 'done'])],
+            ]];
+        }
+
+        if ($user->can('leads.view')) {
+            $sections[] = ['title' => 'Leads', 'tone' => 'leads', 'link' => ['label' => 'تقرير Leads', 'url' => route('admin.reports.leads')], 'cards' => [
+                ['label' => 'إجمالي Leads', 'value' => $leadsCount, 'icon' => 'bi-person-lines-fill', 'url' => route('admin.reports.leads')],
+                ['label' => 'Leads جديدة', 'value' => $newLeadsCount, 'icon' => 'bi-person-plus', 'url' => route('admin.reports.leads', ['status' => 'new'])],
+                ['label' => 'Leads مؤهلة', 'value' => $qualifiedLeadsCount, 'icon' => 'bi-check2-circle', 'url' => route('admin.reports.leads', ['status' => 'qualified'])],
+                ['label' => 'تم تحويلها', 'value' => $convertedLeadsCount, 'icon' => 'bi-arrow-repeat', 'url' => route('admin.reports.leads', ['conversionState' => 'converted'])],
+            ]];
+
+            $sections[] = ['title' => 'متابعات Leads', 'tone' => 'followups', 'link' => null, 'cards' => [
+                ['label' => 'متابعات Leads اليوم', 'value' => $todayLeadFollowupsCount, 'icon' => 'bi-chat-left-dots', 'url' => route('admin.reports.leads', ['followupState' => 'today'])],
+                ['label' => 'متابعات Leads متأخرة', 'value' => $overdueLeadFollowupsCount, 'icon' => 'bi-exclamation-triangle', 'url' => route('admin.reports.leads', ['followupState' => 'overdue']), 'alert' => true],
+                ['label' => 'متابعات Leads قيد التنفيذ', 'value' => $pendingLeadFollowupsCount, 'icon' => 'bi-hourglass-split', 'url' => route('admin.reports.leads', ['followupState' => 'pending'])],
+                ['label' => 'متابعات Leads مكتملة', 'value' => $doneLeadFollowupsCount, 'icon' => 'bi-check2-all', 'url' => route('admin.lead-followups.index', ['status' => 'done'])],
+            ]];
+        }
+
+        if ($user->can('tasks.view')) {
+            $sections[] = ['title' => 'المهام', 'tone' => 'tasks', 'link' => ['label' => 'كل المهام', 'url' => route('admin.tasks.index')], 'cards' => [
+                ['label' => 'مهام جديدة', 'value' => $totalTasksCount ?? 0, 'icon' => 'bi-list-task', 'url' => route('admin.tasks.index')],
+                ['label' => 'مهام اليوم', 'value' => $todayTasksCount ?? 0, 'icon' => 'bi-calendar-check', 'url' => route('admin.tasks.index', ['dateFilter' => 'today'])],
+                ['label' => 'مهام متأخرة', 'value' => $overdueTasksCount ?? 0, 'icon' => 'bi-exclamation-triangle', 'url' => route('admin.tasks.index', ['dateFilter' => 'overdue']), 'alert' => true],
+                ['label' => 'قيد التنفيذ', 'value' => $inProgressTasksCount ?? 0, 'icon' => 'bi-hourglass-split', 'url' => route('admin.tasks.index', ['status' => 'in_progress'])],
+                ['label' => 'في المراجعة', 'value' => $reviewTasksCount ?? 0, 'icon' => 'bi-search', 'url' => route('admin.tasks.index', ['status' => 'review'])],
+            ]];
+        }
+
+        if ($user->can('projects.view')) {
+            $sections[] = ['title' => 'المشاريع', 'tone' => 'projects', 'link' => ['label' => 'كل المشاريع', 'url' => route('admin.projects.index')], 'cards' => [
+                ['label' => 'مشاريع نشطة', 'value' => $activeProjectsCount ?? 0, 'icon' => 'bi-kanban', 'url' => route('admin.projects.index', ['statusGroup' => 'active'])],
+                ['label' => 'قيد التنفيذ', 'value' => $inProgressProjectsCount ?? 0, 'icon' => 'bi-hourglass-split', 'url' => route('admin.projects.index', ['status' => 'in_progress'])],
+                ['label' => 'مشاريع متأخرة', 'value' => $overdueProjectsCount ?? 0, 'icon' => 'bi-exclamation-triangle', 'url' => route('admin.projects.index', ['dateFilter' => 'overdue']), 'alert' => true],
+                ['label' => 'مشاريع مكتملة', 'value' => $completedProjectsCount ?? 0, 'icon' => 'bi-check2-circle', 'url' => route('admin.projects.index', ['status' => 'completed'])],
+            ]];
+        }
     @endphp
 
-    <div class="row g-4 mb-4">
-        @can('clients.view')
-            <div class="col-12 col-md-6 col-xl-3">
-                <a href="{{ route('admin.reports.clients') }}"
-                   class="stat-card card border-0 shadow-sm stat-card-link">
-                    <div class="card-body">
-                        <div class="stat-icon bg-primary-subtle text-primary">
-                            <i class="bi bi-people"></i>
-                        </div>
-                        <div class="stat-title">إجمالي العملاء</div>
-                        <div class="stat-value">{{ $clientsCount }}</div>
-                    </div>
-                </a>
-            </div>
 
-            <div class="col-12 col-md-6 col-xl-3">
-                <a href="{{ route('admin.reports.clients', ['status' => 'new']) }}"
-                   class="stat-card card border-0 shadow-sm stat-card-link">
-                    <div class="card-body">
-                        <div class="stat-icon bg-info-subtle text-info">
-                            <i class="bi bi-person-plus"></i>
-                        </div>
-                        <div class="stat-title">عملاء جدد</div>
-                        <div class="stat-value">{{ $newClientsCount }}</div>
-                    </div>
-                </a>
-            </div>
-        @endcan
+    @php
+        $greeting = now()->hour < 12 ? 'صباح الخير' : 'مساء الخير';
+        $agenda = [];
 
-        @can('followups.view')
-            <div class="col-12 col-md-6 col-xl-3">
-                <a href="{{ route('admin.reports.clients', ['followupState' => 'today']) }}"
-                   class="stat-card card border-0 shadow-sm stat-card-link">
-                    <div class="card-body">
-                        <div class="stat-icon bg-warning-subtle text-warning">
-                            <i class="bi bi-calendar-event"></i>
-                        </div>
-                        <div class="stat-title">متابعات اليوم</div>
-                        <div class="stat-value">{{ $todayFollowupsCount }}</div>
-                    </div>
-                </a>
-            </div>
+        if ($user->can('tasks.view')) {
+            $agenda[] = ['count' => $todayTasksCount ?? 0, 'label' => 'مهام اليوم', 'url' => route('admin.tasks.index', ['dateFilter' => 'today'])];
+            $agenda[] = ['count' => $overdueTasksCount ?? 0, 'label' => 'مهام متأخرة', 'url' => route('admin.tasks.index', ['dateFilter' => 'overdue']), 'alert' => true];
+        }
 
-            <div class="col-12 col-md-6 col-xl-3">
-                <a href="{{ route('admin.reports.clients', ['followupState' => 'overdue']) }}"
-                   class="stat-card card border-0 shadow-sm stat-card-link">
-                    <div class="card-body">
-                        <div class="stat-icon bg-danger-subtle text-danger">
-                            <i class="bi bi-exclamation-triangle"></i>
-                        </div>
-                        <div class="stat-title">متابعات متأخرة</div>
-                        <div class="stat-value">{{ $overdueFollowupsCount }}</div>
-                    </div>
-                </a>
-            </div>
-        @endcan
-    </div>
+        if ($user->can('followups.view')) {
+            $agenda[] = ['count' => $todayFollowupsCount, 'label' => 'متابعات اليوم', 'url' => route('admin.reports.clients', ['followupState' => 'today'])];
+        }
+    @endphp
 
-    <div class="row g-4 mb-4">
-        @can('sales.view')
-            <div class="col-12 col-md-6 col-xl-3">
-                <a href="{{ route('admin.reports.sales-payments') }}"
-                   class="stat-card card border-0 shadow-sm stat-card-link">
-                    <div class="card-body">
-                        <div class="stat-icon bg-success-subtle text-success">
-                            <i class="bi bi-cash-coin"></i>
-                        </div>
-                        <div class="stat-title">إجمالي المبيعات</div>
-                        <div class="stat-value fs-4">{{ number_format($salesTotal, 2) }}</div>
-                    </div>
-                </a>
-            </div>
-        @endcan
+    <section class="dash-hero">
+        <div class="dash-hero-text">
+            <h1 class="dash-hero-title">{{ $greeting }}، {{ $user->name }}</h1>
+            <p class="dash-hero-sub">ملخص أداء {{ setting('general.company_name', 'Hulul') }} ومتابعة أعمالك لليوم.</p>
 
-        @can('payments.view')
-            <div class="col-12 col-md-6 col-xl-3">
-                <a href="{{ route('admin.reports.sales-payments') }}"
-                   class="stat-card card border-0 shadow-sm stat-card-link">
-                    <div class="card-body">
-                        <div class="stat-icon bg-success-subtle text-success">
-                            <i class="bi bi-wallet2"></i>
-                        </div>
-                        <div class="stat-title">إجمالي المدفوع</div>
-                        <div class="stat-value fs-4">{{ number_format($paymentsTotal, 2) }}</div>
-                    </div>
-                </a>
-            </div>
-
-            <div class="col-12 col-md-6 col-xl-3">
-                <a href="{{ route('admin.reports.sales-payments', ['balanceState' => 'has_remaining']) }}"
-                   class="stat-card card border-0 shadow-sm stat-card-link">
-                    <div class="card-body">
-                        <div class="stat-icon bg-danger-subtle text-danger">
-                            <i class="bi bi-hourglass-bottom"></i>
-                        </div>
-                        <div class="stat-title">إجمالي المتبقي</div>
-                        <div class="stat-value fs-4">{{ number_format($remainingTotal, 2) }}</div>
-                    </div>
-                </a>
-            </div>
-        @endcan
-
-        @can('sales.view')
-            <div class="col-12 col-md-6 col-xl-3">
-                <a href="{{ route('admin.reports.sales-payments', [
-                        'soldFrom' => $monthStart,
-                        'soldTo' => $monthEnd,
-                    ]) }}"
-                   class="stat-card card border-0 shadow-sm stat-card-link">
-                    <div class="card-body">
-                        <div class="stat-icon bg-primary-subtle text-primary">
-                            <i class="bi bi-calendar-month"></i>
-                        </div>
-                        <div class="stat-title">مبيعات الشهر</div>
-                        <div class="stat-value fs-4">{{ number_format($monthlySalesTotal, 2) }}</div>
-                    </div>
-                </a>
-            </div>
-        @endcan
-    </div>
-
-    @can('leads.view')
-        <div class="row g-4 mb-4">
-            <div class="col-12 col-md-6 col-xl-3">
-                <a href="{{ route('admin.reports.leads') }}"
-                   class="stat-card card border-0 shadow-sm stat-card-link">
-                    <div class="card-body">
-                        <div class="stat-icon bg-primary-subtle text-primary">
-                            <i class="bi bi-person-lines-fill"></i>
-                        </div>
-                        <div class="stat-title">إجمالي Leads</div>
-                        <div class="stat-value">{{ $leadsCount }}</div>
-                    </div>
-                </a>
-            </div>
-
-            <div class="col-12 col-md-6 col-xl-3">
-                <a href="{{ route('admin.reports.leads', ['status' => 'new']) }}"
-                   class="stat-card card border-0 shadow-sm stat-card-link">
-                    <div class="card-body">
-                        <div class="stat-icon bg-info-subtle text-info">
-                            <i class="bi bi-person-plus"></i>
-                        </div>
-                        <div class="stat-title">Leads جديدة</div>
-                        <div class="stat-value">{{ $newLeadsCount }}</div>
-                    </div>
-                </a>
-            </div>
-
-            <div class="col-12 col-md-6 col-xl-3">
-                <a href="{{ route('admin.reports.leads', ['status' => 'qualified']) }}"
-                   class="stat-card card border-0 shadow-sm stat-card-link">
-                    <div class="card-body">
-                        <div class="stat-icon bg-success-subtle text-success">
-                            <i class="bi bi-check2-circle"></i>
-                        </div>
-                        <div class="stat-title">Leads مؤهلة</div>
-                        <div class="stat-value">{{ $qualifiedLeadsCount }}</div>
-                    </div>
-                </a>
-            </div>
-
-            <div class="col-12 col-md-6 col-xl-3">
-                <a href="{{ route('admin.reports.leads', ['conversionState' => 'converted']) }}"
-                   class="stat-card card border-0 shadow-sm stat-card-link">
-                    <div class="card-body">
-                        <div class="stat-icon bg-success-subtle text-success">
-                            <i class="bi bi-arrow-repeat"></i>
-                        </div>
-                        <div class="stat-title">تم تحويلها</div>
-                        <div class="stat-value">{{ $convertedLeadsCount }}</div>
-                    </div>
-                </a>
-            </div>
-        </div>
-
-        <div class="row g-4 mb-4">
-            <div class="col-12 col-md-6 col-xl-4">
-                <a href="{{ route('admin.reports.leads', ['followupState' => 'today']) }}"
-                   class="stat-card card border-0 shadow-sm stat-card-link">
-                    <div class="card-body">
-                        <div class="stat-icon bg-warning-subtle text-warning">
-                            <i class="bi bi-chat-left-dots"></i>
-                        </div>
-                        <div class="stat-title">متابعات Leads اليوم</div>
-                        <div class="stat-value">{{ $todayLeadFollowupsCount }}</div>
-                    </div>
-                </a>
-            </div>
-
-            <div class="col-12 col-md-6 col-xl-4">
-                <a href="{{ route('admin.reports.leads', ['followupState' => 'overdue']) }}"
-                   class="stat-card card border-0 shadow-sm stat-card-link">
-                    <div class="card-body">
-                        <div class="stat-icon bg-danger-subtle text-danger">
-                            <i class="bi bi-exclamation-triangle"></i>
-                        </div>
-                        <div class="stat-title">متابعات Leads متأخرة</div>
-                        <div class="stat-value">{{ $overdueLeadFollowupsCount }}</div>
-                    </div>
-                </a>
-            </div>
-
-            <div class="col-12 col-md-6 col-xl-4">
-                <a href="{{ route('admin.reports.leads', ['followupState' => 'pending']) }}"
-                   class="stat-card card border-0 shadow-sm stat-card-link">
-                    <div class="card-body">
-                        <div class="stat-icon bg-info-subtle text-info">
-                            <i class="bi bi-hourglass-split"></i>
-                        </div>
-                        <div class="stat-title">متابعات Leads قيد التنفيذ</div>
-                        <div class="stat-value">{{ $pendingLeadFollowupsCount }}</div>
-                    </div>
-                </a>
-            </div>
-        </div>
-    @endcan
-
-    <div class="row g-4 mb-4">
-        @can('clients.view')
-            <div class="col-12 col-md-6 col-xl-3">
-                <a href="{{ route('admin.reports.clients', ['status' => 'active']) }}"
-                   class="small-stat-card card border-0 shadow-sm stat-card-link">
-                    <div class="card-body d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="text-muted small">عملاء نشطين</div>
-                            <div class="fw-bold fs-4">{{ $activeClientsCount }}</div>
-                        </div>
-                        <i class="bi bi-check-circle text-success fs-3"></i>
-                    </div>
-                </a>
-            </div>
-        @endcan
-
-        @can('followups.view')
-            <div class="col-12 col-md-6 col-xl-3">
-                <a href="{{ route('admin.reports.clients', ['followupState' => 'pending']) }}"
-                   class="small-stat-card card border-0 shadow-sm stat-card-link">
-                    <div class="card-body d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="text-muted small">متابعات قيد التنفيذ</div>
-                            <div class="fw-bold fs-4">{{ $pendingFollowupsCount }}</div>
-                        </div>
-                        <i class="bi bi-hourglass-split text-warning fs-3"></i>
-                    </div>
-                </a>
-            </div>
-        @endcan
-    </div>
-
-    @can('tasks.view')
-        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-5 g-4 mb-4">
-            <div class="col">
-                <a href="{{ route('admin.tasks.index') }}"
-                   class="card border-0 shadow-sm small-stat-card stat-card-link">
-                    <div class="card-body">
-                        <div class="text-muted small mb-1">مهام جديدة</div>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h4 class="mb-0">{{ $totalTasksCount ?? 0 }}</h4>
-                            <i class="bi bi-list-task fs-3 text-secondary"></i>
-                        </div>
-                    </div>
-                </a>
-            </div>
-
-            <div class="col">
-                <a href="{{ route('admin.tasks.index', ['dateFilter' => 'today']) }}"
-                   class="card border-0 shadow-sm small-stat-card stat-card-link">
-                    <div class="card-body">
-                        <div class="text-muted small mb-1">مهام اليوم</div>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h4 class="mb-0">{{ $todayTasksCount ?? 0 }}</h4>
-                            <i class="bi bi-calendar-check fs-3 text-primary"></i>
-                        </div>
-                    </div>
-                </a>
-            </div>
-
-            <div class="col">
-                <a href="{{ route('admin.tasks.index', ['dateFilter' => 'overdue']) }}"
-                   class="card border-0 shadow-sm small-stat-card stat-card-link">
-                    <div class="card-body">
-                        <div class="text-muted small mb-1">مهام متأخرة</div>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h4 class="mb-0">{{ $overdueTasksCount ?? 0 }}</h4>
-                            <i class="bi bi-exclamation-triangle fs-3 text-danger"></i>
-                        </div>
-                    </div>
-                </a>
-            </div>
-
-            <div class="col">
-                <a href="{{ route('admin.tasks.index', ['status' => 'in_progress']) }}"
-                   class="card border-0 shadow-sm small-stat-card stat-card-link">
-                    <div class="card-body">
-                        <div class="text-muted small mb-1">قيد التنفيذ</div>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h4 class="mb-0">{{ $inProgressTasksCount ?? 0 }}</h4>
-                            <i class="bi bi-hourglass-split fs-3 text-info"></i>
-                        </div>
-                    </div>
-                </a>
-            </div>
-
-            <div class="col">
-                <a href="{{ route('admin.tasks.index', ['status' => 'review']) }}"
-                   class="card border-0 shadow-sm small-stat-card stat-card-link">
-                    <div class="card-body">
-                        <div class="text-muted small mb-1">في المراجعة</div>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h4 class="mb-0">{{ $reviewTasksCount ?? 0 }}</h4>
-                            <i class="bi bi-search fs-3 text-warning"></i>
-                        </div>
-                    </div>
-                </a>
-            </div>
-        </div>
-    @endcan
-
-    @can('projects.view')
-        <div class="row g-4 mb-4">
-            <div class="col-md-3">
-                <a href="{{ route('admin.projects.index', ['statusGroup' => 'active']) }}"
-                   class="card border-0 shadow-sm small-stat-card stat-card-link">
-                    <div class="card-body">
-                        <div class="text-muted small mb-1">مشاريع نشطة</div>
-
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h4 class="mb-0">{{ $activeProjectsCount ?? 0 }}</h4>
-                            <i class="bi bi-kanban fs-3 text-primary"></i>
-                        </div>
-                    </div>
-                </a>
-            </div>
-
-            <div class="col-md-3">
-                <a href="{{ route('admin.projects.index', ['status' => 'in_progress']) }}"
-                   class="card border-0 shadow-sm small-stat-card stat-card-link">
-                    <div class="card-body">
-                        <div class="text-muted small mb-1">قيد التنفيذ</div>
-
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h4 class="mb-0">{{ $inProgressProjectsCount ?? 0 }}</h4>
-                            <i class="bi bi-hourglass-split fs-3 text-info"></i>
-                        </div>
-                    </div>
-                </a>
-            </div>
-
-            <div class="col-md-3">
-                <a href="{{ route('admin.projects.index', ['dateFilter' => 'overdue']) }}"
-                   class="card border-0 shadow-sm small-stat-card stat-card-link">
-                    <div class="card-body">
-                        <div class="text-muted small mb-1">مشاريع متأخرة</div>
-
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h4 class="mb-0">{{ $overdueProjectsCount ?? 0 }}</h4>
-                            <i class="bi bi-exclamation-triangle fs-3 text-danger"></i>
-                        </div>
-                    </div>
-                </a>
-            </div>
-
-            <div class="col-md-3">
-                <a href="{{ route('admin.projects.index', ['status' => 'completed']) }}"
-                   class="card border-0 shadow-sm small-stat-card stat-card-link">
-                    <div class="card-body">
-                        <div class="text-muted small mb-1">مشاريع مكتملة</div>
-
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h4 class="mb-0">{{ $completedProjectsCount ?? 0 }}</h4>
-                            <i class="bi bi-check2-circle fs-3 text-success"></i>
-                        </div>
-                    </div>
-                </a>
-            </div>
-        </div>
-    @endcan
-
-    <div class="row g-4">
-        <div class="col-lg-4">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">آخر العملاء</h5>
-
-                    @can('clients.view')
-                        <a href="{{ route('admin.clients.index') }}" class="btn btn-sm btn-light">
-                            عرض الكل
+            @if ($agenda)
+                <div class="dash-hero-agenda">
+                    @foreach ($agenda as $item)
+                        <a href="{{ $item['url'] }}"
+                           class="dash-hero-chip {{ ! empty($item['alert']) && $item['count'] > 0 ? 'is-alert' : '' }}">
+                            <strong>{{ $item['count'] }}</strong>
+                            {{ $item['label'] }}
                         </a>
-                    @endcan
+                    @endforeach
                 </div>
-
-                <div class="card-body">
-                    @forelse ($latestClients as $client)
-                        <div class="dashboard-list-item">
-                            <div>
-                                <a href="{{ route('admin.clients.show', $client) }}"
-                                   class="fw-semibold text-decoration-none text-dark">
-                                    {{ $client->name }}
-                                </a>
-
-                                <div class="small text-muted">
-                                    {{ $client->company ?? 'بدون شركة' }}
-                                </div>
-                            </div>
-
-                            <span class="badge {{ $client->status_badge_class }}">
-                                {{ $client->status_label }}
-                            </span>
-                        </div>
-                    @empty
-                        <div class="text-center text-muted py-4">
-                            لا يوجد عملاء حتى الآن
-                        </div>
-                    @endforelse
-                </div>
-            </div>
+            @endif
         </div>
 
-        <div class="col-lg-4">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">آخر المتابعات</h5>
+        <div class="dash-hero-actions">
+            @can('tasks.create')
+                <a href="{{ route('admin.tasks.create') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-lg"></i>
+                    مهمة جديدة
+                </a>
+            @endcan
 
-                    @can('followups.view')
-                        <a href="{{ route('admin.followups.index') }}" class="btn btn-sm btn-light">
-                            عرض الكل
-                        </a>
-                    @endcan
-                </div>
+            @can('clients.create')
+                <a href="{{ route('admin.clients.create') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-person-plus"></i>
+                    عميل جديد
+                </a>
+            @endcan
 
-                <div class="card-body">
-                    @forelse ($latestFollowups as $followup)
-                        <div class="dashboard-list-item">
-                            <div>
-                                <div class="fw-semibold">
-                                    {{ $followup->client?->name ?? 'عميل محذوف' }}
-                                </div>
-
-                                <div class="small text-muted">
-                                    {{ str($followup->note)->limit(50) }}
-                                </div>
-
-                                <div class="small text-muted mt-1">
-                                    {{ $followup->next_followup_at?->format('Y-m-d H:i') ?? '-' }}
-                                </div>
-                            </div>
-
-                            <span class="badge {{ $followup->status_badge_class }}">
-                                {{ $followup->status_label }}
-                            </span>
-                        </div>
-                    @empty
-                        <div class="text-center text-muted py-4">
-                            لا توجد متابعات حتى الآن
-                        </div>
-                    @endforelse
-                </div>
-            </div>
+            @can('leads.create')
+                <a href="{{ route('admin.leads.create') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-person-lines-fill"></i>
+                    Lead جديد
+                </a>
+            @endcan
         </div>
+    </section>
 
-        <div class="col-lg-4">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">آخر المبيعات</h5>
+    @foreach ($sections as $section)
+        <section class="stat-section stat-tone-{{ $section['tone'] }}">
+            <header class="stat-section-head">
+                <h2 class="stat-section-title">{{ $section['title'] }}</h2>
 
-                    @can('sales.view')
-                        <a href="{{ route('admin.sales.index') }}" class="btn btn-sm btn-light">
-                            عرض الكل
-                        </a>
-                    @endcan
-                </div>
+                @if ($section['link'])
+                    <a href="{{ $section['link']['url'] }}" class="stat-section-link">
+                        {{ $section['link']['label'] }}
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                @endif
+            </header>
 
-                <div class="card-body">
-                    @forelse ($latestSales as $sale)
-                        <div class="dashboard-list-item">
-                            <div>
-                                <a href="{{ route('admin.sales.show', $sale) }}"
-                                   class="fw-semibold text-decoration-none text-dark">
-                                    بيع #{{ $sale->id }}
-                                </a>
-
-                                <div class="small text-muted">
-                                    {{ $sale->client?->name ?? '-' }}
+            <div class="row g-4">
+                @foreach ($section['cards'] as $card)
+                    <div class="col-12 col-sm-6 col-xl-3">
+                        <a href="{{ $card['url'] }}"
+                           class="stat-card card border-0 shadow-sm stat-card-link {{ ! empty($card['alert']) ? 'is-alert' : '' }} {{ ! empty($card['alert']) && (float) $card['value'] > 0 ? 'has-value' : '' }}">
+                            <div class="card-body">
+                                <div class="stat-icon">
+                                    <i class="bi {{ $card['icon'] }}"></i>
                                 </div>
-
-                                <div class="small text-muted mt-1">
-                                    إجمالي:
-                                    <strong>{{ number_format($sale->total, 2) }}</strong>
-                                    -
-                                    مدفوع:
-                                    <strong>{{ number_format($sale->paid_amount, 2) }}</strong>
-                                </div>
+                                <div class="stat-title">{{ $card['label'] }}</div>
+                                <div class="stat-value">{{ $card['value'] }}</div>
                             </div>
-
-                            <span class="badge {{ $sale->status_badge_class }}">
-                                {{ $sale->status_label }}
-                            </span>
-                        </div>
-                    @empty
-                        <div class="text-center text-muted py-4">
-                            لا توجد مبيعات حتى الآن
-                        </div>
-                    @endforelse
-                </div>
+                        </a>
+                    </div>
+                @endforeach
             </div>
-        </div>
-    </div>
+        </section>
+    @endforeach
 
-    <div class="row g-4 mt-4">
-        <div class="col-lg-4">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">آخر الleads </h5>
+    <div class="dash">
+        <header class="dash-section-head">
+            <h2 class="dash-section-title">آخر النشاطات</h2>
+        </header>
 
-                    @can('leads.view')
-                        <a href="{{ route('admin.leads.index') }}" class="btn btn-sm btn-light">
-                            عرض الكل
-                        </a>
-                    @endcan
-                </div>
+        <div class="row g-3">
+            <div class="col-12 col-xl-6">
+                <section class="dash-panel dash-list-panel">
+                    <header class="dash-panel-head">
+                        <h3 class="dash-panel-title">آخر المهام</h3>
+                        @can('tasks.view')
+                            <a href="{{ route('admin.tasks.index') }}" class="dash-link">عرض الكل <i class="bi bi-chevron-left"></i></a>
+                        @endcan
+                    </header>
 
-                <div class="card-body">
-                    @forelse ($latestLeads as $lead)
-                        <div class="dashboard-list-item">
-                            <div>
-                                <div class="fw-semibold">
-                                    {{ $lead->name }}
+                    <div class="dash-list">
+                        @forelse ($latestTasks ?? [] as $task)
+                            <div class="dash-row">
+                                <div class="dash-row-main">
+                                    <a href="{{ route('admin.tasks.show', $task) }}" class="dash-row-title">{{ $task->title }}</a>
+                                    <div class="dash-row-meta">
+                                        <span><i class="bi bi-person"></i> {{ $task->assignedMembers->pluck('name')->implode('، ') ?: '-' }}</span>
+                                        @if ($task->client)
+                                            <span>عميل: {{ $task->client->name }}</span>
+                                        @elseif ($task->lead)
+                                            <span>Lead: {{ $task->lead->name }}</span>
+                                        @endif
+                                    </div>
                                 </div>
 
-                                <div class="small text-muted">
-                                    {{ $lead->company ?? 'بدون شركة' }}
-                                    -
-                                    {{ $lead->source ?? 'بدون مصدر' }}
-                                </div>
-
-                                <div class="small text-muted mt-1">
-                                    المسؤول:
-                                    {{ $lead->assignedUser?->name ?? '-' }}
-                                </div>
-                            </div>
-
-                            <span class="badge {{ $lead->status_badge_class }}">
-                                {{ $lead->status_label }}
-                            </span>
-                        </div>
-                    @empty
-                        <div class="text-center text-muted py-4">
-                            لا يوجد Leads حتى الآن
-                        </div>
-                    @endforelse
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-4">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">آخر متابعات Leads</h5>
-
-                    @can('leads.view')
-                        <a href="{{ route('admin.lead-followups.index') }}" class="btn btn-sm btn-light">
-                            عرض الكل
-                        </a>
-                    @endcan
-                </div>
-
-                <div class="card-body">
-                    @forelse ($latestLeadFollowups as $followup)
-                        <div class="dashboard-list-item">
-                            <div>
-                                <div class="fw-semibold">
-                                    {{ $followup->lead?->name ?? 'Lead محذوف' }}
-                                </div>
-
-                                <div class="small text-muted">
-                                    <i class="bi {{ $followup->type_icon }}"></i>
-                                    {{ $followup->type_label }}
-                                    -
-                                    {{ str($followup->note)->limit(50) }}
-                                </div>
-
-                                <div class="small text-muted mt-1">
-                                    المسؤول:
-                                    {{ $followup->user?->name ?? '-' }}
-
-                                    @if ($followup->next_followup_at)
-                                        -
-                                        {{ $followup->next_followup_at->format('Y-m-d H:i') }}
-                                    @endif
-                                </div>
-                            </div>
-
-                            <span class="badge {{ $followup->status_badge_class }}">
-                                {{ $followup->status_label }}
-                            </span>
-                        </div>
-                    @empty
-                        <div class="text-center text-muted py-4">
-                            لا توجد متابعات Leads حتى الآن
-                        </div>
-                    @endforelse
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-4">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">آخر المهام</h5>
-
-                    @can('tasks.view')
-                        <a href="{{ route('admin.tasks.index') }}" class="btn btn-sm btn-light">
-                            عرض الكل
-                        </a>
-                    @endcan
-                </div>
-
-                <div class="card-body">
-                    @forelse ($latestTasks ?? [] as $task)
-                        <div class="dashboard-list-item">
-                            <div>
-                                <div class="fw-semibold">
-                                    <a href="{{ route('admin.tasks.show', $task) }}" class="text-decoration-none">
-                                        {{ $task->title }}
-                                    </a>
-                                </div>
-
-                                <div class="small text-muted">
-                                    المسؤول:
-                                    {{ $task->assignedMembers->pluck('name')->implode('، ') ?: '-' }}
-                                </div>
-
-                                <div class="small text-muted">
-                                    @if ($task->client)
-                                        عميل: {{ $task->client->name }}
-                                    @elseif ($task->lead)
-                                        Lead: {{ $task->lead->name }}
-                                    @else
-                                        بدون ربط
-                                    @endif
-                                </div>
-                            </div>
-
-                            <div class="text-end">
-                                <div class="mb-1">
-                                    <span class="badge {{ $task->status_badge_class }}">
-                                        {{ $task->status_label }}
+                                <div class="dash-row-aside">
+                                    <span class="dash-badge {{ $task->status_badge_class }}">{{ $task->status_label }}</span>
+                                    <span class="dash-row-date {{ $task->is_overdue ? 'is-alert' : '' }}">
+                                        {{ $task->due_at?->format('Y-m-d') ?? '-' }}
                                     </span>
                                 </div>
-
-                                <div class="small text-muted">
-                                    التسليم:
-                                    {{ $task->due_at?->format('Y-m-d H:i') ?? '-' }}
-                                </div>
-
-                                @if ($task->is_overdue)
-                                    <div class="small text-danger">
-                                        متأخرة
-                                    </div>
-                                @endif
                             </div>
-                        </div>
-                    @empty
-                        <div class="text-center text-muted py-4">
-                            لا توجد مهام حتى الآن
-                        </div>
-                    @endforelse
-                </div>
+                        @empty
+                            <div class="dash-empty">لا توجد مهام حتى الآن</div>
+                        @endforelse
+                    </div>
+                </section>
             </div>
-        </div>
-    </div>
 
-    <div class="row g-4 mb-4 mt-3">
-        <div class="col-lg-4">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">آخر المشاريع</h5>
+            <div class="col-12 col-xl-6">
+                <section class="dash-panel dash-list-panel">
+                    <header class="dash-panel-head">
+                        <h3 class="dash-panel-title">آخر المشاريع</h3>
+                        @can('projects.view')
+                            <a href="{{ route('admin.projects.index') }}" class="dash-link">عرض الكل <i class="bi bi-chevron-left"></i></a>
+                        @endcan
+                    </header>
 
-                    @can('projects.view')
-                        <a href="{{ route('admin.projects.index') }}" class="btn btn-sm btn-light">
-                            عرض الكل
-                        </a>
-                    @endcan
-                </div>
-
-                <div class="card-body">
-                    @forelse ($latestProjects ?? [] as $project)
-                        <div class="dashboard-list-item">
-                            <div>
-                                <div class="fw-semibold">
-                                    <a href="{{ route('admin.projects.show', $project) }}" class="text-decoration-none">
-                                        {{ $project->name }}
-                                    </a>
-                                </div>
-
-                                <div class="small text-muted">
-                                    العميل:
-                                    @if ($project->client)
-                                        {{ $project->client->name }}
-                                    @else
-                                        -
-                                    @endif
-                                </div>
-
-                                <div class="small text-muted">
-                                    الفريق:
-                                    {{ $project->team?->name ?? '-' }}
-
-                                    @if ($project->manager)
-                                        |
-                                        المدير: {{ $project->manager->name }}
-                                    @endif
-                                </div>
-
-                                <div class="small text-muted">
-                                    المهام:
-                                    الكل {{ $project->tasks_count }}
-                                    /
-                                    المفتوحة {{ $project->open_tasks_count }}
-                                </div>
-
-                                <div class="mt-2" style="max-width: 240px;">
-                                    <div class="d-flex justify-content-between small mb-1">
-                                        <span>الإنجاز</span>
+                    <div class="dash-list">
+                        @forelse ($latestProjects ?? [] as $project)
+                            <div class="dash-row">
+                                <div class="dash-row-main">
+                                    <a href="{{ route('admin.projects.show', $project) }}" class="dash-row-title">{{ $project->name }}</a>
+                                    <div class="dash-row-meta">
+                                        <span>{{ $project->client?->name ?? '-' }}</span>
+                                        <span>المهام المفتوحة {{ $project->open_tasks_count }} / {{ $project->tasks_count }}</span>
+                                    </div>
+                                    <div class="dash-row-progress">
+                                        <div class="dash-progress dash-progress-sm">
+                                            <span style="width: {{ $project->progress_percentage }}%"></span>
+                                        </div>
                                         <span>{{ $project->progress_percentage }}%</span>
                                     </div>
-
-                                    <div class="progress" style="height: 8px;">
-                                        <div class="progress-bar" role="progressbar"
-                                             style="width: {{ $project->progress_percentage }}%;"
-                                             aria-valuenow="{{ $project->progress_percentage }}"
-                                             aria-valuemin="0"
-                                             aria-valuemax="100">
-                                        </div>
-                                    </div>
                                 </div>
-                            </div>
 
-                            <div class="text-end">
-                                <div class="mb-1">
-                                    <span class="badge {{ $project->status_badge_class }}">
-                                        {{ $project->status_label }}
+                                <div class="dash-row-aside">
+                                    <span class="dash-badge {{ $project->status_badge_class }}">{{ $project->status_label }}</span>
+                                    <span class="dash-row-date {{ $project->is_overdue ? 'is-alert' : '' }}">
+                                        {{ $project->due_date?->format('Y-m-d') ?? '-' }}
                                     </span>
                                 </div>
-
-                                <div class="mb-1">
-                                    <span class="badge {{ $project->priority_badge_class }}">
-                                        {{ $project->priority_label }}
-                                    </span>
-                                </div>
-
-                                <div class="small text-muted">
-                                    التسليم:
-                                    {{ $project->due_date?->format('Y-m-d') ?? '-' }}
-                                </div>
-
-                                @if ($project->is_overdue)
-                                    <div class="small text-danger">
-                                        متأخر
-                                    </div>
-                                @endif
                             </div>
-                        </div>
-                    @empty
-                        <div class="text-center text-muted py-4">
-                            لا توجد مشاريع حتى الآن
-                        </div>
-                    @endforelse
-                </div>
+                        @empty
+                            <div class="dash-empty">لا توجد مشاريع حتى الآن</div>
+                        @endforelse
+                    </div>
+                </section>
+            </div>
+
+            <div class="col-12 col-lg-6 col-xl-4">
+                <section class="dash-panel dash-list-panel">
+                    <header class="dash-panel-head">
+                        <h3 class="dash-panel-title">آخر المبيعات</h3>
+                        @can('sales.view')
+                            <a href="{{ route('admin.sales.index') }}" class="dash-link">عرض الكل <i class="bi bi-chevron-left"></i></a>
+                        @endcan
+                    </header>
+
+                    <div class="dash-list">
+                        @forelse ($latestSales as $sale)
+                            <div class="dash-row">
+                                <div class="dash-row-main">
+                                    <a href="{{ route('admin.sales.show', $sale) }}" class="dash-row-title">بيع #{{ $sale->id }}</a>
+                                    <div class="dash-row-meta">
+                                        <span>{{ $sale->client?->name ?? '-' }}</span>
+                                    </div>
+                                    <div class="dash-row-meta">
+                                        <span>الإجمالي <strong>{{ number_format($sale->total, 2) }}</strong></span>
+                                        <span>المدفوع <strong>{{ number_format($sale->paid_amount, 2) }}</strong></span>
+                                    </div>
+                                </div>
+
+                                <div class="dash-row-aside">
+                                    <span class="dash-badge {{ $sale->status_badge_class }}">{{ $sale->status_label }}</span>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="dash-empty">لا توجد مبيعات حتى الآن</div>
+                        @endforelse
+                    </div>
+                </section>
+            </div>
+
+            <div class="col-12 col-lg-6 col-xl-4">
+                <section class="dash-panel dash-list-panel">
+                    <header class="dash-panel-head">
+                        <h3 class="dash-panel-title">آخر العملاء</h3>
+                        @can('clients.view')
+                            <a href="{{ route('admin.clients.index') }}" class="dash-link">عرض الكل <i class="bi bi-chevron-left"></i></a>
+                        @endcan
+                    </header>
+
+                    <div class="dash-list">
+                        @forelse ($latestClients as $client)
+                            <div class="dash-row">
+                                <div class="dash-row-main">
+                                    <a href="{{ route('admin.clients.show', $client) }}" class="dash-row-title">{{ $client->name }}</a>
+                                    <div class="dash-row-meta">
+                                        <span>{{ $client->company ?? 'بدون شركة' }}</span>
+                                    </div>
+                                </div>
+
+                                <div class="dash-row-aside">
+                                    <span class="dash-badge {{ $client->status_badge_class }}">{{ $client->status_label }}</span>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="dash-empty">لا يوجد عملاء حتى الآن</div>
+                        @endforelse
+                    </div>
+                </section>
+            </div>
+
+            <div class="col-12 col-lg-6 col-xl-4">
+                <section class="dash-panel dash-list-panel">
+                    <header class="dash-panel-head">
+                        <h3 class="dash-panel-title">آخر Leads</h3>
+                        @can('leads.view')
+                            <a href="{{ route('admin.leads.index') }}" class="dash-link">عرض الكل <i class="bi bi-chevron-left"></i></a>
+                        @endcan
+                    </header>
+
+                    <div class="dash-list">
+                        @forelse ($latestLeads as $lead)
+                            <div class="dash-row">
+                                <div class="dash-row-main">
+                                    <span class="dash-row-title">{{ $lead->name }}</span>
+                                    <div class="dash-row-meta">
+                                        <span>{{ $lead->company ?? 'بدون شركة' }}</span>
+                                        <span>{{ $lead->source ?? 'بدون مصدر' }}</span>
+                                    </div>
+                                    <div class="dash-row-meta">
+                                        <span><i class="bi bi-person"></i> {{ $lead->assignedUser?->name ?? '-' }}</span>
+                                    </div>
+                                </div>
+
+                                <div class="dash-row-aside">
+                                    <span class="dash-badge {{ $lead->status_badge_class }}">{{ $lead->status_label }}</span>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="dash-empty">لا يوجد Leads حتى الآن</div>
+                        @endforelse
+                    </div>
+                </section>
+            </div>
+
+            <div class="col-12 col-lg-6">
+                <section class="dash-panel dash-list-panel">
+                    <header class="dash-panel-head">
+                        <h3 class="dash-panel-title">آخر المتابعات</h3>
+                        @can('followups.view')
+                            <a href="{{ route('admin.followups.index') }}" class="dash-link">عرض الكل <i class="bi bi-chevron-left"></i></a>
+                        @endcan
+                    </header>
+
+                    <div class="dash-list">
+                        @forelse ($latestFollowups as $followup)
+                            <div class="dash-row">
+                                <div class="dash-row-main">
+                                    <span class="dash-row-title">{{ $followup->client?->name ?? 'عميل محذوف' }}</span>
+                                    <div class="dash-row-note">{{ str($followup->note)->limit(70) }}</div>
+                                </div>
+
+                                <div class="dash-row-aside">
+                                    <span class="dash-badge {{ $followup->status_badge_class }}">{{ $followup->status_label }}</span>
+                                    <span class="dash-row-date">{{ $followup->next_followup_at?->format('Y-m-d H:i') ?? '-' }}</span>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="dash-empty">لا توجد متابعات حتى الآن</div>
+                        @endforelse
+                    </div>
+                </section>
+            </div>
+
+            <div class="col-12 col-lg-6">
+                <section class="dash-panel dash-list-panel">
+                    <header class="dash-panel-head">
+                        <h3 class="dash-panel-title">آخر متابعات Leads</h3>
+                        @can('leads.view')
+                            <a href="{{ route('admin.lead-followups.index') }}" class="dash-link">عرض الكل <i class="bi bi-chevron-left"></i></a>
+                        @endcan
+                    </header>
+
+                    <div class="dash-list">
+                        @forelse ($latestLeadFollowups as $followup)
+                            <div class="dash-row">
+                                <div class="dash-row-main">
+                                    <span class="dash-row-title">{{ $followup->lead?->name ?? 'Lead محذوف' }}</span>
+                                    <div class="dash-row-meta">
+                                        <span><i class="bi {{ $followup->type_icon }}"></i> {{ $followup->type_label }}</span>
+                                        <span><i class="bi bi-person"></i> {{ $followup->user?->name ?? '-' }}</span>
+                                    </div>
+                                    <div class="dash-row-note">{{ str($followup->note)->limit(70) }}</div>
+                                </div>
+
+                                <div class="dash-row-aside">
+                                    <span class="dash-badge {{ $followup->status_badge_class }}">{{ $followup->status_label }}</span>
+                                    @if ($followup->next_followup_at)
+                                        <span class="dash-row-date">{{ $followup->next_followup_at->format('Y-m-d H:i') }}</span>
+                                    @endif
+                                </div>
+                            </div>
+                        @empty
+                            <div class="dash-empty">لا توجد متابعات Leads حتى الآن</div>
+                        @endforelse
+                    </div>
+                </section>
             </div>
         </div>
     </div>
 
     @if ($showTasksPopup)
-        <div class="modal fade" id="tasksPopupModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
+        @php
+            $popupSections = collect([
+                ['key' => 'assigned', 'title' => 'مهام جديدة اتسندت لك', 'icon' => 'bi-person-plus', 'tasks' => $popupAssignedTasks],
+                ['key' => 'overdue', 'title' => 'مهام متأخرة', 'icon' => 'bi-exclamation-triangle', 'tasks' => $popupOverdueTasks],
+                ['key' => 'today', 'title' => 'مهام اليوم', 'icon' => 'bi-calendar-check', 'tasks' => $popupTodayTasks],
+            ]);
+            $popupTotal = $popupSections->sum(fn ($section) => $section['tasks']->count());
+        @endphp
+
+        <div class="modal fade tasks-popup" id="tasksPopupModal" tabindex="-1" aria-labelledby="tasksPopupTitle" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable tasks-popup-dialog">
                 <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">
-                            <i class="bi bi-bell text-primary"></i>
-                            تنبيهات المهام
-                        </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+                    <div class="tasks-popup-header">
+                        <div class="tasks-popup-icon">
+                            <i class="bi bi-bell"></i>
+                        </div>
+
+                        <div class="tasks-popup-heading">
+                            <h5 class="tasks-popup-title" id="tasksPopupTitle">تنبيهات المهام</h5>
+                            <p class="tasks-popup-subtitle">عندك {{ $popupTotal }} {{ $popupTotal === 1 ? 'مهمة محتاجة' : 'مهام محتاجة' }} انتباهك</p>
+                        </div>
+
+                        <button type="button" class="tasks-popup-close" data-bs-dismiss="modal" aria-label="إغلاق">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
                     </div>
 
-                    <div class="modal-body">
-                        @if ($popupAssignedTasks->isNotEmpty())
-                            <div class="mb-3">
-                                <span class="badge bg-success mb-2">مهام جديدة اتسندت لك ({{ $popupAssignedTasks->count() }})</span>
-                                @foreach ($popupAssignedTasks as $task)
-                                    <a href="{{ route('admin.tasks.show', $task) }}" class="related-task-item d-block text-decoration-none text-reset">
-                                        <div class="fw-semibold small">{{ $task->title }}</div>
-                                        <div class="text-muted" style="font-size:12px;">
-                                            بواسطة: {{ $task->creator?->name ?? '-' }}
-                                            @if ($task->due_at)
-                                                - الموعد: {{ $task->due_at->format('Y-m-d H:i') }}
-                                            @endif
-                                        </div>
-                                    </a>
-                                @endforeach
+                    <div class="tasks-popup-stats">
+                        @foreach ($popupSections as $section)
+                            <div class="tasks-popup-stat tasks-popup-stat--{{ $section['key'] }} {{ $section['tasks']->isEmpty() ? 'is-empty' : '' }}">
+                                <span class="tasks-popup-stat-value">{{ $section['tasks']->count() }}</span>
+                                <span class="tasks-popup-stat-label">{{ $section['title'] }}</span>
                             </div>
-                        @endif
-
-                        @if ($popupOverdueTasks->isNotEmpty())
-                            <div class="mb-3">
-                                <span class="badge bg-danger mb-2">مهام متأخرة ({{ $popupOverdueTasks->count() }})</span>
-                                @foreach ($popupOverdueTasks as $task)
-                                    <a href="{{ route('admin.tasks.show', $task) }}" class="related-task-item d-block text-decoration-none text-reset">
-                                        <div class="fw-semibold small">{{ $task->title }}</div>
-                                        <div class="text-danger" style="font-size:12px;">
-                                            الموعد كان: {{ $task->due_at?->format('Y-m-d H:i') }}
-                                        </div>
-                                    </a>
-                                @endforeach
-                            </div>
-                        @endif
-
-                        @if ($popupTodayTasks->isNotEmpty())
-                            <div>
-                                <span class="badge bg-primary mb-2">مهام اليوم ({{ $popupTodayTasks->count() }})</span>
-                                @foreach ($popupTodayTasks as $task)
-                                    <a href="{{ route('admin.tasks.show', $task) }}" class="related-task-item d-block text-decoration-none text-reset">
-                                        <div class="fw-semibold small">{{ $task->title }}</div>
-                                        <div class="text-muted" style="font-size:12px;">
-                                            الموعد: {{ $task->due_at?->format('Y-m-d H:i') }}
-                                        </div>
-                                    </a>
-                                @endforeach
-                            </div>
-                        @endif
+                        @endforeach
                     </div>
 
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">إغلاق</button>
-                        <a href="{{ route('admin.tasks.index') }}" class="btn btn-primary">عرض كل المهام</a>
+                    <div class="modal-body tasks-popup-body">
+                        @foreach ($popupSections->filter(fn ($section) => $section['tasks']->isNotEmpty()) as $section)
+                            <section class="tasks-popup-section tasks-popup-section--{{ $section['key'] }}">
+                                <div class="tasks-popup-section-head">
+                                    <i class="bi {{ $section['icon'] }}"></i>
+                                    <span>{{ $section['title'] }}</span>
+                                    <span class="tasks-popup-section-count">{{ $section['tasks']->count() }}</span>
+                                </div>
+
+                                <div class="tasks-popup-list">
+                                    @foreach ($section['tasks'] as $task)
+                                        @include('admin.tasks.partials.popup-item', ['task' => $task, 'variant' => $section['key']])
+                                    @endforeach
+                                </div>
+                            </section>
+                        @endforeach
+                    </div>
+
+                    <div class="tasks-popup-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">لاحقاً</button>
+                        <a href="{{ route('admin.tasks.index') }}" class="btn btn-primary">
+                            عرض كل المهام
+                            <i class="bi bi-arrow-left"></i>
+                        </a>
                     </div>
                 </div>
             </div>

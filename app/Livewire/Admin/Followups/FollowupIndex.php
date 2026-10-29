@@ -6,6 +6,7 @@ use App\Models\ClientFollowup;
 use App\Models\User;
 use App\Traits\AuthorizesOwnedRecords;
 use Carbon\Carbon;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -14,7 +15,10 @@ class FollowupIndex extends Component
     use WithPagination, AuthorizesOwnedRecords;
 
     public string $search = '';
+
+    #[Url(except: '')]
     public string $status = '';
+
     public string $userId = '';
     public string $dateFilter = '';
 

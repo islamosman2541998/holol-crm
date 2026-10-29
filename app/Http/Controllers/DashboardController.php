@@ -33,6 +33,10 @@ class DashboardController extends Controller
             ->where('status', 'active')
             ->count();
 
+        $inactiveClientsCount = (clone $clientQuery)
+            ->where('status', 'inactive')
+            ->count();
+
         $leadQuery = Lead::query();
         $this->applyOwnedRecordScope($leadQuery, 'leads.view_all', 'assigned_to');
 
@@ -72,6 +76,10 @@ class DashboardController extends Controller
 
         $pendingFollowupsCount = (clone $followupQuery)
             ->where('status', 'pending')
+            ->count();
+
+        $doneFollowupsCount = (clone $followupQuery)
+            ->where('status', 'done')
             ->count();
 
         $saleQuery = Sale::query();
@@ -139,6 +147,10 @@ class DashboardController extends Controller
 
         $pendingLeadFollowupsCount = (clone $leadFollowupQuery)
             ->where('status', 'pending')
+            ->count();
+
+        $doneLeadFollowupsCount = (clone $leadFollowupQuery)
+            ->where('status', 'done')
             ->count();
 
         $latestLeadFollowups = (clone $leadFollowupQuery)
@@ -296,6 +308,7 @@ class DashboardController extends Controller
             'clientsCount',
             'newClientsCount',
             'activeClientsCount',
+            'inactiveClientsCount',
             'leadsCount',
             'newLeadsCount',
             'qualifiedLeadsCount',
@@ -303,6 +316,7 @@ class DashboardController extends Controller
             'todayFollowupsCount',
             'overdueFollowupsCount',
             'pendingFollowupsCount',
+            'doneFollowupsCount',
             'salesTotal',
             'paymentsTotal',
             'remainingTotal',
@@ -314,6 +328,7 @@ class DashboardController extends Controller
             'todayLeadFollowupsCount',
             'overdueLeadFollowupsCount',
             'pendingLeadFollowupsCount',
+            'doneLeadFollowupsCount',
             'latestLeadFollowups',
             'totalTasksCount',
             'todayTasksCount',

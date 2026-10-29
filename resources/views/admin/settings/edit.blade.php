@@ -57,7 +57,7 @@
                             <div class="col-md-6">
                                 <label class="form-label">اسم السيستم</label>
                                 <input type="text" name="system_name" class="form-control"
-                                    value="{{ old('system_name', setting('general.system_name', 'Holol CRM')) }}">
+                                    value="{{ old('system_name', setting('general.system_name', 'Hulul CRM')) }}">
                             </div>
 
                             <div class="col-md-6">

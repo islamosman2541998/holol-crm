@@ -28,7 +28,7 @@ class SystemBackup
             throw new RuntimeException('Another backup is already running.');
         }
 
-        $base = 'holol-'.now('UTC')->format('Ymd-His').'-'.bin2hex(random_bytes(4));
+        $base = 'hulul-'.now('UTC')->format('Ymd-His').'-'.bin2hex(random_bytes(4));
         $partial = $directory.DIRECTORY_SEPARATOR.$base.'.partial';
         $final = $directory.DIRECTORY_SEPARATOR.$base.'.zip';
         $dump = $directory.DIRECTORY_SEPARATOR.$base.'.database.tmp';
@@ -297,7 +297,7 @@ class SystemBackup
         }
 
         $config = $connection->getConfig();
-        $schema = 'holol_restore_test_'.bin2hex(random_bytes(8));
+        $schema = 'hulul_restore_test_'.bin2hex(random_bytes(8));
         $created = false;
 
         try {

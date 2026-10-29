@@ -1,4 +1,4 @@
-# نسخ Holol CRM الاحتياطية واختبار الاسترجاع
+# نسخ Hulul CRM الاحتياطية واختبار الاسترجاع
 
 ## ما الذي يُحفظ؟
 
@@ -19,11 +19,11 @@
 
 ```text
 php artisan backup:create
-php artisan backup:verify /absolute/path/to/holol-YYYYMMDD-HHMMSS-xxxxxxxx.zip
-php artisan backup:restore-test /absolute/path/to/holol-YYYYMMDD-HHMMSS-xxxxxxxx.zip
+php artisan backup:verify /absolute/path/to/hulul-YYYYMMDD-HHMMSS-xxxxxxxx.zip
+php artisan backup:restore-test /absolute/path/to/hulul-YYYYMMDD-HHMMSS-xxxxxxxx.zip
 ```
 
-`backup:restore-test` يفحص الأرشيف ثم يستخرج قاعدة البيانات إلى ملف مؤقت. في MySQL/MariaDB يُنشئ قاعدة مؤقتة باسم `holol_restore_test_...` ويستورد SQL ويفحص الجداول وسجلات migrations ثم يحذف **القاعدة المؤقتة فقط**. يحتاج المستخدم صلاحية `CREATE DATABASE` و`DROP DATABASE`، ووجود عميل `mysql` في PATH أو ضبط `BACKUP_MYSQL_BINARY`. نفّذه خارج وقت الذروة، ويُفضّل على بيئة اختبار/خادم منفصل. في SQLite يفحص سلامة قاعدة مستعادة مؤقتة. لا يستبدل هذا الأمر قاعدة التطبيق العاملة.
+`backup:restore-test` يفحص الأرشيف ثم يستخرج قاعدة البيانات إلى ملف مؤقت. في MySQL/MariaDB يُنشئ قاعدة مؤقتة باسم `hulul_restore_test_...` ويستورد SQL ويفحص الجداول وسجلات migrations ثم يحذف **القاعدة المؤقتة فقط**. يحتاج المستخدم صلاحية `CREATE DATABASE` و`DROP DATABASE`، ووجود عميل `mysql` في PATH أو ضبط `BACKUP_MYSQL_BINARY`. نفّذه خارج وقت الذروة، ويُفضّل على بيئة اختبار/خادم منفصل. في SQLite يفحص سلامة قاعدة مستعادة مؤقتة. لا يستبدل هذا الأمر قاعدة التطبيق العاملة.
 
 في حالة عطل حقيقي: لا تسترجع فوق قاعدة السيرفر مباشرة. أولًا خذ نسخة مما تبقى، ثم استرجع الأرشيف إلى بيئة اختبار منفصلة، وراجع وقت النسخة والبيانات والمرفقات، وبعد الموافقة نفّذ خطة نقل البيانات المناسبة. ملف ZIP يحفظ `storage/app` بنفس المسارات النسبية.
 

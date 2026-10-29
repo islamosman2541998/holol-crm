@@ -1,7 +1,7 @@
 <header class="admin-topbar">
     <div class="topbar-heading">
-        <h5 class="mb-0">@yield('page_title', 'لوحة التحكم')</h5>
-        <small class="text-muted">مرحبًا، {{ auth()->user()->name }}</small>
+        <h1 class="topbar-title">@yield('page_title', 'لوحة التحكم')</h1>
+        <div class="topbar-date">{{ now()->locale('ar')->translatedFormat('l، j F Y') }}</div>
     </div>
 
     <div class="topbar-actions">
@@ -10,6 +10,8 @@
         </button>
 
         <livewire:admin.shared.notification-bell />
+
+        <span class="topbar-divider" aria-hidden="true"></span>
 
         <div class="dropdown user-dropdown">
             <button type="button" class="user-chip" data-bs-toggle="dropdown" aria-expanded="false">

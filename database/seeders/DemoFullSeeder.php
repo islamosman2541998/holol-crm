@@ -209,7 +209,7 @@ class DemoFullSeeder extends Seeder
             ['name' => 'متجر رين سمارت', 'company' => 'Reine Smart'],
             ['name' => 'عيادات سمايل', 'company' => 'Lasting Smile'],
             ['name' => 'شركة ديستركت', 'company' => 'District 4'],
-            ['name' => 'مؤسسة حلول', 'company' => 'Holol'],
+            ['name' => 'مؤسسة حلول', 'company' => 'Hulul'],
             ['name' => 'شركة Spring Flower', 'company' => 'Spring Flower'],
             ['name' => 'شركة السائح', 'company' => 'Al Saeh'],
         ];

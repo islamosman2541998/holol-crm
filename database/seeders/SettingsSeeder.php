@@ -10,15 +10,15 @@ class SettingsSeeder extends Seeder
     public function run(): void
     {
         $settings = [
-            ['general', 'system_name', 'Holol CRM', 'text'],
-            ['general', 'company_name', 'Holol', 'text'],
+            ['general', 'system_name', 'Hulul CRM', 'text'],
+            ['general', 'company_name', 'Hulul', 'text'],
             ['general', 'email', 'info@hololcrm.test', 'text'],
             ['general', 'phone', '01000000000', 'text'],
 
             ['branding', 'system_logo', null, 'image'],
             ['branding', 'favicon', null, 'image'],
 
-            ['login', 'login_title', 'Holol CRM', 'text'],
+            ['login', 'login_title', 'Hulul CRM', 'text'],
             ['login', 'login_subtitle', 'تسجيل الدخول إلى لوحة التحكم', 'text'],
             ['login', 'login_logo', null, 'image'],
             ['login', 'login_background', null, 'image'],
