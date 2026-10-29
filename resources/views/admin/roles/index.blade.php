@@ -5,74 +5,87 @@
 
 @section('content')
 
-
-
-    <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">قائمة الأدوار</h5>
+    <div class="list-card">
+        <header class="list-card-head">
+            <div>
+                <h2 class="list-card-title">قائمة الأدوار</h2>
+                <p class="list-card-sub">{{ number_format($roles->total()) }} دور</p>
+            </div>
 
             @can('roles.create')
-                <a href="{{ route('admin.roles.create') }}" class="btn btn-primary">
-                    <i class="bi bi-plus-circle"></i>
-                    إضافة دور
-                </a>
+                <div class="list-card-actions">
+                    <a href="{{ route('admin.roles.create') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-lg"></i>
+                        إضافة دور
+                    </a>
+                </div>
             @endcan
-        </div>
+        </header>
 
-        <div class="card-body">
-            <div class="table-responsive app-table-responsive">
-                <table class="table table-hover align-middle app-data-table">
-                    <thead>
+        <div class="table-responsive data-table-wrap is-bordered-top">
+            <table class="table align-middle mb-0 data-table has-actions">
+                <thead>
+                    <tr>
+                        <th>اسم الدور</th>
+                        <th>عدد الصلاحيات</th>
+                        <th class="col-actions">الإجراءات</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @forelse ($roles as $role)
                         <tr>
-                            <th>اسم الدور</th>
-                            <th>عدد الصلاحيات</th>
-                            <th class="text-end">الإجراءات</th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        @forelse ($roles as $role)
-                            <tr>
-                                <td class="fw-semibold">{{ $role->name }}</td>
-                                <td>{{ $role->permissions_count }}</td>
-                                <td class="text-end">
+                            <td><span class="cell-person-name">{{ $role->name }}</span></td>
+                            <td>
+                                <span class="badge bg-light text-dark border">{{ $role->permissions_count }}</span>
+                            </td>
+                            <td>
+                                <div class="row-actions">
                                     @if ($role->name !== 'SEO Manager')
                                         @can('roles.edit')
-                                            <a href="{{ route('admin.roles.edit', $role) }}"
-                                                class="btn btn-sm btn-outline-primary">
+                                            <a href="{{ route('admin.roles.edit', $role) }}" class="row-action is-edit"
+                                                title="تعديل الدور" aria-label="تعديل الدور">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
                                         @endcan
 
                                         @can('roles.delete')
                                             <form action="{{ route('admin.roles.destroy', $role) }}" method="POST"
-                                                class="d-inline js-delete-form">
+                                                class="js-delete-form">
                                                 @csrf
                                                 @method('DELETE')
 
-                                                <button class="btn btn-sm btn-outline-danger">
-                                                    <i class="bi bi-trash"></i>
+                                                <button type="submit" class="row-action is-danger" title="حذف الدور"
+                                                    aria-label="حذف الدور">
+                                                    <i class="bi bi-trash3"></i>
                                                 </button>
                                             </form>
                                         @endcan
                                     @else
                                         <span class="badge bg-dark">مدير النظام</span>
                                     @endif
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="3" class="text-center text-muted py-4">
-                                    لا يوجد أدوار
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-
-            {{ $roles->links() }}
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="3">
+                                <div class="list-empty">
+                                    <i class="bi bi-inbox"></i>
+                                    <div>لا يوجد أدوار حتى الآن</div>
+                                </div>
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
+
+        @if ($roles->hasPages())
+            <div class="list-card-foot">
+                {{ $roles->links() }}
+            </div>
+        @endif
     </div>
 
 @endsection

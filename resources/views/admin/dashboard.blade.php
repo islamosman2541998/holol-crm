@@ -205,7 +205,7 @@
                                 </div>
 
                                 <div class="dash-row-aside">
-                                    <span class="dash-badge {{ $task->status_badge_class }}">{{ $task->status_label }}</span>
+                                    <span class="soft-badge {{ $task->status_badge_class }}">{{ $task->status_label }}</span>
                                     <span class="dash-row-date {{ $task->is_overdue ? 'is-alert' : '' }}">
                                         {{ $task->due_at?->format('Y-m-d') ?? '-' }}
                                     </span>
@@ -245,7 +245,7 @@
                                 </div>
 
                                 <div class="dash-row-aside">
-                                    <span class="dash-badge {{ $project->status_badge_class }}">{{ $project->status_label }}</span>
+                                    <span class="soft-badge {{ $project->status_badge_class }}">{{ $project->status_label }}</span>
                                     <span class="dash-row-date {{ $project->is_overdue ? 'is-alert' : '' }}">
                                         {{ $project->due_date?->format('Y-m-d') ?? '-' }}
                                     </span>
@@ -282,7 +282,7 @@
                                 </div>
 
                                 <div class="dash-row-aside">
-                                    <span class="dash-badge {{ $sale->status_badge_class }}">{{ $sale->status_label }}</span>
+                                    <span class="soft-badge {{ $sale->status_badge_class }}">{{ $sale->status_label }}</span>
                                 </div>
                             </div>
                         @empty
@@ -312,7 +312,7 @@
                                 </div>
 
                                 <div class="dash-row-aside">
-                                    <span class="dash-badge {{ $client->status_badge_class }}">{{ $client->status_label }}</span>
+                                    <span class="soft-badge {{ $client->status_badge_class }}">{{ $client->status_label }}</span>
                                 </div>
                             </div>
                         @empty
@@ -346,7 +346,7 @@
                                 </div>
 
                                 <div class="dash-row-aside">
-                                    <span class="dash-badge {{ $lead->status_badge_class }}">{{ $lead->status_label }}</span>
+                                    <span class="soft-badge {{ $lead->status_badge_class }}">{{ $lead->status_label }}</span>
                                 </div>
                             </div>
                         @empty
@@ -374,7 +374,7 @@
                                 </div>
 
                                 <div class="dash-row-aside">
-                                    <span class="dash-badge {{ $followup->status_badge_class }}">{{ $followup->status_label }}</span>
+                                    <span class="soft-badge {{ $followup->status_badge_class }}">{{ $followup->status_label }}</span>
                                     <span class="dash-row-date">{{ $followup->next_followup_at?->format('Y-m-d H:i') ?? '-' }}</span>
                                 </div>
                             </div>
@@ -407,7 +407,7 @@
                                 </div>
 
                                 <div class="dash-row-aside">
-                                    <span class="dash-badge {{ $followup->status_badge_class }}">{{ $followup->status_label }}</span>
+                                    <span class="soft-badge {{ $followup->status_badge_class }}">{{ $followup->status_label }}</span>
                                     @if ($followup->next_followup_at)
                                         <span class="dash-row-date">{{ $followup->next_followup_at->format('Y-m-d H:i') }}</span>
                                     @endif

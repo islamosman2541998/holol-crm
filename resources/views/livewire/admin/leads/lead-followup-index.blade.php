@@ -1,201 +1,201 @@
 <div>
-    <div class="row g-4 mb-4">
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <div class="stat-title">متابعات اليوم</div>
-                    <div class="stat-value">{{ $todayCount }}</div>
+    @php
+        $hasFilters = $search !== '' || $type !== '' || $status !== '' || $userId !== '' || $dateFilter !== '';
+
+        $summary = [
+            ['label' => 'متابعات اليوم', 'value' => $todayCount, 'icon' => 'bi-calendar-event'],
+            ['label' => 'متأخرة', 'value' => $overdueCount, 'icon' => 'bi-exclamation-triangle', 'alert' => true],
+            ['label' => 'قيد المتابعة', 'value' => $pendingCount, 'icon' => 'bi-hourglass-split'],
+            ['label' => 'تمت', 'value' => $doneCount, 'icon' => 'bi-check2-all'],
+        ];
+    @endphp
+
+    <section class="stat-section stat-tone-followups">
+        <div class="row g-4">
+            @foreach ($summary as $card)
+                <div class="col-12 col-sm-6 col-xl-3">
+                    <div class="stat-card card border-0 shadow-sm {{ ! empty($card['alert']) ? 'is-alert' : '' }} {{ ! empty($card['alert']) && $card['value'] > 0 ? 'has-value' : '' }}">
+                        <div class="card-body">
+                            <div class="stat-icon"><i class="bi {{ $card['icon'] }}"></i></div>
+                            <div class="stat-title">{{ $card['label'] }}</div>
+                            <div class="stat-value">{{ number_format($card['value']) }}</div>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            @endforeach
         </div>
+    </section>
 
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <div class="stat-title">متأخرة</div>
-                    <div class="stat-value">{{ $overdueCount }}</div>
-                </div>
+    <div class="list-card">
+        <header class="list-card-head">
+            <div>
+                <h2 class="list-card-title">قائمة متابعات الـ Leads</h2>
+                <p class="list-card-sub">{{ number_format($leadFollowups->total()) }} متابعة{{ $hasFilters ? ' مطابقة للتصفية' : '' }}</p>
             </div>
-        </div>
 
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <div class="stat-title">قيد المتابعة</div>
-                    <div class="stat-value">{{ $pendingCount }}</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <div class="stat-title">تمت</div>
-                    <div class="stat-value">{{ $doneCount }}</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body">
-            <div class="row g-3 align-items-end">
-                <div class="col-md-3">
-                    <label class="form-label">بحث</label>
-                    <input type="text"
-                           class="form-control"
-                           placeholder="اسم الـ Lead / الشركة / الملاحظة"
-                           wire:model.live.debounce.400ms="search">
-                </div>
-
-                <div class="col-md-2">
-                    <label class="form-label">نوع المتابعة</label>
-                    <select class="form-select" wire:model.live="type">
-                        <option value="">كل الأنواع</option>
-                        <option value="note">ملاحظة</option>
-                        <option value="call">مكالمة</option>
-                        <option value="whatsapp">واتساب</option>
-                        <option value="meeting">اجتماع</option>
-                        <option value="email">إيميل</option>
-                    </select>
-                </div>
-
-                <div class="col-md-2">
-                    <label class="form-label">الحالة</label>
-                    <select class="form-select" wire:model.live="status">
-                        <option value="">كل الحالات</option>
-                        <option value="pending">قيد المتابعة</option>
-                        <option value="done">تمت</option>
-                        <option value="cancelled">ملغاة</option>
-                    </select>
-                </div>
-
-                <div class="col-md-2">
-                    <label class="form-label">الموظف</label>
-                    <select class="form-select" wire:model.live="userId">
-                        <option value="">كل الموظفين</option>
-                        @foreach ($users as $user)
-                            <option value="{{ $user->id }}">{{ $user->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="col-md-2">
-                    <label class="form-label">التاريخ</label>
-                    <select class="form-select" wire:model.live="dateFilter">
-                        <option value="">الكل</option>
-                        <option value="today">اليوم</option>
-                        <option value="overdue">متأخرة</option>
-                        <option value="upcoming">قادمة</option>
-                    </select>
-                </div>
-
-                <div class="col-md-1">
-                    <button type="button" class="btn btn-light w-100" wire:click="resetFilters">
-                        <i class="bi bi-arrow-counterclockwise"></i>
+            @if ($hasFilters)
+                <div class="list-card-actions">
+                    <button type="button" class="btn btn-light" wire:click="resetFilters">
+                        <i class="bi bi-x-lg"></i>
+                        مسح التصفية
                     </button>
                 </div>
+            @endif
+        </header>
+
+        <div class="list-filters">
+            <div class="list-filter list-filter-search">
+                <label class="form-label" for="leadFollowupSearch">بحث</label>
+                <div class="list-search">
+                    <i class="bi bi-search"></i>
+                    <input type="text" id="leadFollowupSearch" class="form-control" placeholder="اسم الـ Lead / الشركة / الملاحظة"
+                        wire:model.live.debounce.400ms="search">
+                </div>
+            </div>
+
+            <div class="list-filter">
+                <label class="form-label" for="leadFollowupType">نوع المتابعة</label>
+                <select id="leadFollowupType" class="form-select" wire:model.live="type">
+                    <option value="">كل الأنواع</option>
+                    <option value="note">ملاحظة</option>
+                    <option value="call">مكالمة</option>
+                    <option value="whatsapp">واتساب</option>
+                    <option value="meeting">اجتماع</option>
+                    <option value="email">إيميل</option>
+                </select>
+            </div>
+
+            <div class="list-filter">
+                <label class="form-label" for="leadFollowupStatus">الحالة</label>
+                <select id="leadFollowupStatus" class="form-select" wire:model.live="status">
+                    <option value="">كل الحالات</option>
+                    <option value="pending">قيد المتابعة</option>
+                    <option value="done">تمت</option>
+                    <option value="cancelled">ملغاة</option>
+                </select>
+            </div>
+
+            <div class="list-filter">
+                <label class="form-label" for="leadFollowupUser">الموظف</label>
+                <select id="leadFollowupUser" class="form-select" wire:model.live="userId">
+                    <option value="">كل الموظفين</option>
+                    @foreach ($users as $user)
+                        <option value="{{ $user->id }}">{{ $user->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="list-filter">
+                <label class="form-label" for="leadFollowupDate">التاريخ</label>
+                <select id="leadFollowupDate" class="form-select" wire:model.live="dateFilter">
+                    <option value="">الكل</option>
+                    <option value="today">اليوم</option>
+                    <option value="overdue">متأخرة</option>
+                    <option value="upcoming">قادمة</option>
+                </select>
             </div>
         </div>
-    </div>
 
-    <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white">
-            <h5 class="mb-0">قائمة متابعات الـ Leads</h5>
-        </div>
+        <div class="table-responsive data-table-wrap">
+            <table class="table align-middle mb-0 data-table has-actions">
+                <thead>
+                    <tr>
+                        <th>Lead</th>
+                        <th>النوع</th>
+                        <th>الملاحظة</th>
+                        <th>الموظف</th>
+                        <th>ميعاد المتابعة</th>
+                        <th>الحالة</th>
+                        <th>تاريخ الإضافة</th>
+                        <th class="col-actions">الإجراءات</th>
+                    </tr>
+                </thead>
 
-        <div class="card-body">
-            <div class="table-responsive app-table-responsive">
-                <table class="table table-hover align-middle app-data-table">
-                    <thead>
-                        <tr>
-                            <th>Lead</th>
-                            <th>النوع</th>
-                            <th>الملاحظة</th>
-                            <th>الموظف</th>
-                            <th>ميعاد المتابعة</th>
-                            <th>الحالة</th>
-                            <th>تاريخ الإضافة</th>
-                            <th class="text-end">الإجراءات</th>
-                        </tr>
-                    </thead>
+                <tbody>
+                    @forelse ($leadFollowups as $followup)
+                        <tr wire:key="lead-followup-{{ $followup->id }}">
+                            <td class="cell-title-wrap">
+                                @if ($followup->lead)
+                                    <a href="{{ route('admin.leads.show', $followup->lead) }}" class="cell-title"
+                                        title="{{ $followup->lead->name }}">
+                                        {{ $followup->lead->name }}
+                                    </a>
+                                    <span class="cell-sub">{{ $followup->lead->company ?? '-' }}</span>
+                                @else
+                                    <span class="text-muted">-</span>
+                                @endif
+                            </td>
 
-                    <tbody>
-                        @forelse ($leadFollowups as $followup)
-                            <tr>
-                                <td>
-                                    @if ($followup->lead)
-                                        <a href="{{ route('admin.leads.show', $followup->lead) }}"
-                                           class="fw-semibold text-decoration-none">
-                                            {{ $followup->lead->name }}
-                                        </a>
+                            <td class="text-nowrap">
+                                <span class="cell-type">
+                                    <i class="bi {{ $followup->type_icon }}"></i>
+                                    {{ $followup->type_label }}
+                                </span>
+                            </td>
 
-                                        <div class="small text-muted">
-                                            {{ $followup->lead->company ?? '-' }}
-                                        </div>
-                                    @else
-                                        -
-                                    @endif
-                                </td>
+                            <td style="min-width: 220px; max-width: 320px;">
+                                {{ str($followup->note)->limit(80) }}
+                            </td>
 
-                                <td>
-                                    <span class="badge bg-light text-dark">
-                                        <i class="bi {{ $followup->type_icon }}"></i>
-                                        {{ $followup->type_label }}
-                                    </span>
-                                </td>
+                            <td class="text-nowrap">{{ $followup->user?->name ?? '-' }}</td>
 
-                                <td style="max-width: 300px;">
-                                    {{ str($followup->note)->limit(80) }}
-                                </td>
+                            <td class="cell-date-wrap">
+                                @if ($followup->next_followup_at)
+                                    <span class="cell-date">{{ $followup->next_followup_at->format('Y-m-d') }}</span>
+                                    <span class="cell-time">{{ $followup->next_followup_at->format('H:i') }}</span>
+                                @else
+                                    <span class="text-muted">-</span>
+                                @endif
+                            </td>
 
-                                <td>{{ $followup->user?->name ?? '-' }}</td>
+                            <td>
+                                <span class="badge {{ $followup->status_badge_class }}">{{ $followup->status_label }}</span>
+                            </td>
 
-                                <td>
-                                    {{ $followup->next_followup_at?->format('Y-m-d H:i') ?? '-' }}
-                                </td>
+                            <td class="cell-date-wrap">
+                                <span class="cell-date">{{ $followup->created_at->format('Y-m-d') }}</span>
+                                <span class="cell-time">{{ $followup->created_at->format('H:i') }}</span>
+                            </td>
 
-                                <td>
-                                    <span class="badge {{ $followup->status_badge_class }}">
-                                        {{ $followup->status_label }}
-                                    </span>
-                                </td>
-
-                                <td>{{ $followup->created_at->format('Y-m-d H:i') }}</td>
-
-                                <td class="text-end">
+                            <td>
+                                <div class="row-actions">
                                     @can('leads.edit')
                                         @if ($followup->status !== 'done')
-                                            <button type="button"
-                                                    class="btn btn-sm btn-outline-success"
-                                                    wire:click="markAsDone({{ $followup->id }})">
+                                            <button type="button" class="row-action is-success"
+                                                wire:click="markAsDone({{ $followup->id }})"
+                                                title="تحديد كمكتملة" aria-label="تحديد كمكتملة">
                                                 <i class="bi bi-check2"></i>
                                             </button>
                                         @endif
 
-                                        <button type="button"
-                                                class="btn btn-sm btn-outline-danger"
-                                                onclick="confirmDeleteLeadFollowupFromIndex({{ $followup->id }})">
-                                            <i class="bi bi-trash"></i>
+                                        <button type="button" class="row-action is-danger"
+                                            onclick="confirmDeleteLeadFollowupFromIndex({{ $followup->id }})"
+                                            title="حذف المتابعة" aria-label="حذف المتابعة">
+                                            <i class="bi bi-trash3"></i>
                                         </button>
                                     @endcan
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="8" class="text-center text-muted py-4">
-                                    لا توجد متابعات
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="8">
+                                <div class="list-empty">
+                                    <i class="bi bi-inbox"></i>
+                                    <div>{{ $hasFilters ? 'لا توجد متابعات مطابقة للتصفية' : 'لا توجد متابعات حتى الآن' }}</div>
+                                </div>
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
 
-            <div class="mt-3">
+        @if ($leadFollowups->hasPages())
+            <div class="list-card-foot">
                 {{ $leadFollowups->links() }}
             </div>
-        </div>
+        @endif
     </div>
 
     <script>
